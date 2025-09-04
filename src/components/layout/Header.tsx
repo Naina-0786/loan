@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { DollarSign } from 'lucide-react';
+import { DollarSign, Menu, X } from 'lucide-react';
 import Button from '../ui/Button';
 
 export default function Header() {
   const location = useLocation();
-  
+  const [menuOpen, setMenuOpen] = useState(false);
+
   const isActive = (path: string) => location.pathname === path;
 
   return (
@@ -20,32 +21,67 @@ export default function Header() {
             <span className="text-xl font-bold text-gray-900">LoanFlow</span>
           </Link>
 
-          {/* Navigation */}
+          {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
             <Link
               to="/"
-              className={`text-sm font-medium transition-colors ${
-                isActive('/') ? 'text-blue-600' : 'text-gray-600 hover:text-gray-900'
-              }`}
+              className={`text-sm font-medium transition-colors ${isActive('/') ? 'text-blue-600' : 'text-gray-600 hover:text-gray-900'
+                }`}
             >
               Home
             </Link>
             <Link
               to="/calculator"
-              className={`text-sm font-medium transition-colors ${
-                isActive('/calculator') ? 'text-blue-600' : 'text-gray-600 hover:text-gray-900'
-              }`}
+              className={`text-sm font-medium transition-colors ${isActive('/calculator') ? 'text-blue-600' : 'text-gray-600 hover:text-gray-900'
+                }`}
             >
               Calculator
             </Link>
           </nav>
 
-          {/* CTA */}
-          <Link to="/apply">
-            <Button size="sm">Apply Now</Button>
-          </Link>
+          {/* CTA + Mobile Menu Button */}
+          <div className="flex items-center space-x-4">
+            <Link to="/apply" className="hidden sm:block">
+              <Button size="sm">Apply Now</Button>
+            </Link>
+
+            {/* Mobile menu button */}
+            <button
+              className="md:hidden p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+              onClick={() => setMenuOpen(!menuOpen)}
+            >
+              {menuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Mobile Navigation */}
+      {menuOpen && (
+        <div className="md:hidden bg-white border-t border-gray-100 shadow-sm">
+          <nav className="flex flex-col p-4 space-y-4">
+            <Link
+              to="/"
+              className={`text-sm font-medium transition-colors ${isActive('/') ? 'text-blue-600' : 'text-gray-600 hover:text-gray-900'
+                }`}
+              onClick={() => setMenuOpen(false)}
+            >
+              Home
+            </Link>
+            <Link
+              to="/calculator"
+              className={`text-sm font-medium transition-colors ${isActive('/calculator') ? 'text-blue-600' : 'text-gray-600 hover:text-gray-900'
+                }`}
+              onClick={() => setMenuOpen(false)}
+            >
+              Calculator
+            </Link>
+            <Link to="/apply" onClick={() => setMenuOpen(false)}>
+              <Button size="sm" className="w-full">Apply Now</Button>
+            </Link>
+          </nav>
+        </div>
+      )}
     </header>
   );
 }
