@@ -1,5 +1,6 @@
 import React from 'react';
 import { Check } from 'lucide-react';
+import axios from 'axios';
 
 interface Step {
   id: number;
@@ -13,8 +14,10 @@ interface ApplicationStepperProps {
   steps: string[];
 }
 
-export default function ApplicationStepper({ currentStep, steps }: ApplicationStepperProps) {
+ export  default  async function ApplicationStepper({ currentStep, steps }: ApplicationStepperProps) {
+  const root = await axios.get('//http/localhost:3000/');
   return (
+
     <div className="mb-8">
       <div className="flex items-center justify-between">
         {steps.map((step, index) => {

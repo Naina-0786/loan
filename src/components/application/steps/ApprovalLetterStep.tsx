@@ -30,6 +30,7 @@ export default function ApprovalLetterStep() {
     }, [isProcessingFeeCompleted, updateStepData]);
 
     const formatDate = (dateString: string) => {
+
         return new Date(dateString).toLocaleDateString('en-IN', {
             year: 'numeric',
             month: 'long',

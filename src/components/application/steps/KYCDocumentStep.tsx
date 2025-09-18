@@ -1,85 +1,47 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { CreditCard, MapPin, User, Users } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { updateLoanApplication } from '../../../api/loanApplicationApi';
 import { useStepper } from '../../../contexts/StepperContext';
 import { KYCData } from '../../../types/stepper';
-import { Upload, FileText, X, Check, User, MapPin, Users } from 'lucide-react';
 
 export default function KYCDocumentStep() {
-    const { updateStepData } = useStepper();
+    const { updateStepData, dispatch, state } = useStepper();
     const [formData, setFormData] = useState<KYCData>({
-        aadhaarFile: null,
-        panFile: null,
+        aadhaarNumber: '',
+        panNumber: '',
         fullName: '',
         fatherName: '',
         address: ''
     });
     const [errors, setErrors] = useState<Record<string, string>>({});
-    const [dragActive, setDragActive] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
 
-    const aadhaarInputRef = useRef<HTMLInputElement>(null);
-    const panInputRef = useRef<HTMLInputElement>(null);
+    // Load existing data on component mount
+    useEffect(() => {
+        if (state.applicationData) {
+            const appData = state.applicationData;
+            if (appData.aadhaarNumber || appData.panNumber || appData.fullName || appData.fatherName || appData.address) {
+                setFormData({
+                    aadhaarNumber: appData.aadhaarNumber || '',
+                    panNumber: appData.panNumber || '',
+                    fullName: appData.fullName || '',
+                    fatherName: appData.fatherName || '',
+                    address: appData.address || ''
+                });
+
+                // Mark step as valid if all required fields are filled
+                if (appData.aadhaarNumber && appData.fullName && appData.fatherName && appData.address) {
+                    dispatch({ type: 'SET_STEP_VALID', payload: { stepId: 4, isValid: true } });
+                }
+            }
+        }
+    }, [state.applicationData, dispatch]);
 
     // Update stepper data whenever form data changes
     useEffect(() => {
-        updateStepData(3, formData);
+        updateStepData(4, formData);
     }, [formData, updateStepData]);
-
-    const validateFile = (file: File, type: 'aadhaar' | 'pan'): string | null => {
-        const maxSize = 5 * 1024 * 1024; // 5MB
-        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
-
-        if (file.size > maxSize) {
-            return 'File size must be less than 5MB';
-        }
-
-        if (!allowedTypes.includes(file.type)) {
-            return 'Only JPG, PNG, and PDF files are allowed';
-        }
-
-        return null;
-    };
-
-    const handleFileUpload = (file: File, type: 'aadhaar' | 'pan') => {
-        const error = validateFile(file, type);
-        if (error) {
-            setErrors(prev => ({ ...prev, [`${type}File`]: error }));
-            return;
-        }
-
-        setErrors(prev => ({ ...prev, [`${type}File`]: '' }));
-        setFormData(prev => ({ ...prev, [`${type}File`]: file }));
-    };
-
-    const handleDrop = (e: React.DragEvent, type: 'aadhaar' | 'pan') => {
-        e.preventDefault();
-        setDragActive(null);
-
-        const files = Array.from(e.dataTransfer.files);
-        if (files.length > 0) {
-            handleFileUpload(files[0], type);
-        }
-    };
-
-    const handleDragOver = (e: React.DragEvent, type: 'aadhaar' | 'pan') => {
-        e.preventDefault();
-        setDragActive(type);
-    };
-
-    const handleDragLeave = (e: React.DragEvent) => {
-        e.preventDefault();
-        setDragActive(null);
-    };
-
-    const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'aadhaar' | 'pan') => {
-        const files = Array.from(e.target.files || []);
-        if (files.length > 0) {
-            handleFileUpload(files[0], type);
-        }
-    };
-
-    const removeFile = (type: 'aadhaar' | 'pan') => {
-        setFormData(prev => ({ ...prev, [`${type}File`]: null }));
-        setErrors(prev => ({ ...prev, [`${type}File`]: '' }));
-    };
 
     const handleInputChange = (field: keyof KYCData, value: string) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -93,8 +55,14 @@ export default function KYCDocumentStep() {
     const validateForm = () => {
         const newErrors: Record<string, string> = {};
 
-        if (!formData.aadhaarFile) {
-            newErrors.aadhaarFile = 'Aadhaar card is mandatory';
+        if (!formData.aadhaarNumber.trim()) {
+            newErrors.aadhaarNumber = 'Aadhaar number is mandatory';
+        } else if (!/^\d{12}$/.test(formData.aadhaarNumber)) {
+            newErrors.aadhaarNumber = 'Aadhaar number must be 12 digits';
+        }
+
+        if (formData.panNumber && formData.panNumber.length !== 10) {
+            newErrors.panNumber = 'Invalid PAN number format';
         }
 
         if (!formData.fullName.trim()) {
@@ -113,122 +81,104 @@ export default function KYCDocumentStep() {
         return Object.keys(newErrors).length === 0;
     };
 
-    const FileUploadArea = ({ type, label, required = false }: {
-        type: 'aadhaar' | 'pan';
-        label: string;
-        required?: boolean;
-    }) => {
-        const file = formData[`${type}File` as keyof KYCData] as File | null;
-        const isDragging = dragActive === type;
-        const hasError = errors[`${type}File`];
+    const handleSubmit = async () => {
+        if (validateForm()) {
+            setIsLoading(true);
+            try {
+                const applicationId = localStorage.getItem('loanApplicationId');
+                if (applicationId) {
+                    await updateLoanApplication(parseInt(applicationId), {
+                        aadharNumber: formData.aadhaarNumber,
+                        panNumber: formData.panNumber,
+                        fullName: formData.fullName,
+                        fatherName: formData.fatherName,
+                        address: formData.address
+                    });
 
-        return (
-            <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
-                    <FileText className="w-4 h-4 inline mr-1" />
-                    {label} {required && <span className="text-red-500">*</span>}
-                </label>
+                    // Update stepper data and mark step as valid
+                    updateStepData(4, formData);
+                    dispatch({ type: 'SET_STEP_VALID', payload: { stepId: 4, isValid: true } });
 
-                <div
-                    className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${isDragging
-                            ? 'border-blue-400 bg-blue-50'
-                            : hasError
-                                ? 'border-red-300 bg-red-50'
-                                : file
-                                    ? 'border-green-300 bg-green-50'
-                                    : 'border-gray-300 hover:border-gray-400'
-                        }`}
-                    onDrop={(e) => handleDrop(e, type)}
-                    onDragOver={(e) => handleDragOver(e, type)}
-                    onDragLeave={handleDragLeave}
-                >
-                    {file ? (
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-2">
-                                <Check className="w-5 h-5 text-green-600" />
-                                <span className="text-sm text-gray-700 truncate">{file.name}</span>
-                                <span className="text-xs text-gray-500">
-                                    ({(file.size / 1024 / 1024).toFixed(2)} MB)
-                                </span>
-                            </div>
-                            <button
-                                onClick={() => removeFile(type)}
-                                className="text-red-500 hover:text-red-700"
-                            >
-                                <X className="w-4 h-4" />
-                            </button>
-                        </div>
-                    ) : (
-                        <div>
-                            <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                            <p className="text-sm text-gray-600 mb-1">
-                                Drag and drop your {label.toLowerCase()} here, or{' '}
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        if (type === 'aadhaar') aadhaarInputRef.current?.click();
-                                        else panInputRef.current?.click();
-                                    }}
-                                    className="text-blue-600 hover:text-blue-700 underline"
-                                >
-                                    browse
-                                </button>
-                            </p>
-                            <p className="text-xs text-gray-500">
-                                Supports: JPG, PNG, PDF (Max 5MB)
-                            </p>
-                        </div>
-                    )}
-                </div>
-
-                <input
-                    ref={type === 'aadhaar' ? aadhaarInputRef : panInputRef}
-                    type="file"
-                    accept=".jpg,.jpeg,.png,.pdf"
-                    onChange={(e) => handleFileInputChange(e, type)}
-                    className="hidden"
-                />
-
-                {hasError && (
-                    <p className="text-red-500 text-sm">{hasError}</p>
-                )}
-            </div>
-        );
+                    toast.success('KYC details submitted successfully!');
+                }
+            } catch (error) {
+                console.error('Failed to save KYC details:', error);
+                toast.error('Failed to save KYC details');
+            } finally {
+                setIsLoading(false);
+            }
+        }
     };
 
     return (
-        <div className="max-w-3xl mx-auto">
-            <div className="space-y-8">
+        <div className="w-full max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="space-y-6">
                 {/* Instructions */}
                 <div className="bg-blue-50 p-4 rounded-lg">
                     <h3 className="text-lg font-semibold text-blue-800 mb-2">
                         KYC Document Verification
                     </h3>
                     <p className="text-blue-700 text-sm mb-2">
-                        Please upload your identity documents and provide personal information for verification.
+                        Please provide your identity details for verification.
                     </p>
                     <ul className="text-blue-700 text-sm space-y-1">
-                        <li>• Aadhaar card is mandatory for identity verification</li>
-                        <li>• PAN card is optional but recommended</li>
-                        <li>• All documents must be clear and readable</li>
-                        <li>• File size should not exceed 5MB</li>
+                        <li>• Aadhaar number is mandatory (12 digits)</li>
+                        <li>• PAN number is optional but recommended (10 characters)</li>
+                        <li>• Ensure details match official records</li>
                     </ul>
                 </div>
 
-                {/* Document Upload Section */}
-                <div className="grid md:grid-cols-2 gap-6">
-                    <FileUploadArea type="aadhaar" label="Aadhaar Card" required />
-                    <FileUploadArea type="pan" label="PAN Card" />
+                {/* Document Input Section */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                    {/* Aadhaar Number */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <CreditCard className="w-4 h-4 inline mr-1" />
+                            Aadhaar Number *
+                        </label>
+                        <input
+                            type="text"
+                            value={formData.aadhaarNumber}
+                            onChange={(e) => handleInputChange('aadhaarNumber', e.target.value.replace(/\D/g, '').slice(0, 12))}
+                            placeholder="Enter your Aadhaar number"
+                            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                errors.aadhaarNumber ? 'border-red-500' : 'border-gray-300'
+                            }`}
+                        />
+                        {errors.aadhaarNumber && (
+                            <p className="text-red-500 text-sm mt-1">{errors.aadhaarNumber}</p>
+                        )}
+                    </div>
+
+                    {/* PAN Number */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <CreditCard className="w-4 h-4 inline mr-1" />
+                            PAN Number
+                        </label>
+                        <input
+                            type="text"
+                            value={formData.panNumber}
+                            onChange={(e) => handleInputChange('panNumber', e.target.value.toUpperCase().slice(0, 10))}
+                            placeholder="Enter your PAN number"
+                            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                errors.panNumber ? 'border-red-500' : 'border-gray-300'
+                            }`}
+                        />
+                        {errors.panNumber && (
+                            <p className="text-red-500 text-sm mt-1">{errors.panNumber}</p>
+                        )}
+                    </div>
                 </div>
 
                 {/* Personal Information Section */}
-                <div className="bg-gray-50 p-6 rounded-lg">
+                <div className="bg-gray-50 p-4 sm:p-6 rounded-lg">
                     <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                         <User className="w-5 h-5 mr-2" />
                         Personal Information
                     </h3>
 
-                    <div className="grid md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                         {/* Full Name */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -239,8 +189,9 @@ export default function KYCDocumentStep() {
                                 value={formData.fullName}
                                 onChange={(e) => handleInputChange('fullName', e.target.value)}
                                 placeholder="Enter your full name as per Aadhaar"
-                                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.fullName ? 'border-red-500' : 'border-gray-300'
-                                    }`}
+                                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                    errors.fullName ? 'border-red-500' : 'border-gray-300'
+                                }`}
                             />
                             {errors.fullName && (
                                 <p className="text-red-500 text-sm mt-1">{errors.fullName}</p>
@@ -258,8 +209,9 @@ export default function KYCDocumentStep() {
                                 value={formData.fatherName}
                                 onChange={(e) => handleInputChange('fatherName', e.target.value)}
                                 placeholder="Enter father's name"
-                                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.fatherName ? 'border-red-500' : 'border-gray-300'
-                                    }`}
+                                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                    errors.fatherName ? 'border-red-500' : 'border-gray-300'
+                                }`}
                             />
                             {errors.fatherName && (
                                 <p className="text-red-500 text-sm mt-1">{errors.fatherName}</p>
@@ -268,7 +220,7 @@ export default function KYCDocumentStep() {
                     </div>
 
                     {/* Address */}
-                    <div className="mt-6">
+                    <div className="mt-4 sm:mt-6">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                             <MapPin className="w-4 h-4 inline mr-1" />
                             Address with Pincode *
@@ -278,8 +230,9 @@ export default function KYCDocumentStep() {
                             onChange={(e) => handleInputChange('address', e.target.value)}
                             placeholder="Enter your complete address with pincode"
                             rows={3}
-                            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.address ? 'border-red-500' : 'border-gray-300'
-                                }`}
+                            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                errors.address ? 'border-red-500' : 'border-gray-300'
+                            }`}
                         />
                         {errors.address && (
                             <p className="text-red-500 text-sm mt-1">{errors.address}</p>
@@ -287,13 +240,24 @@ export default function KYCDocumentStep() {
                     </div>
                 </div>
 
-                {/* Validation Button */}
-                <div className="text-center">
+                {/* Buttons */}
+                <div className="flex flex-col sm:flex-row justify-center gap-4">
                     <button
                         onClick={validateForm}
-                        className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                        className="w-full sm:w-auto px-6 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
                     >
                         Validate Information
+                    </button>
+                    <button
+                        onClick={handleSubmit}
+                        disabled={isLoading || Object.keys(errors).length > 0 || !formData.aadhaarNumber || !formData.fullName || !formData.fatherName || !formData.address}
+                        className={`w-full sm:w-auto px-6 py-2 rounded-md font-medium transition-colors ${
+                            isLoading || Object.keys(errors).length > 0 || !formData.aadhaarNumber || !formData.fullName || !formData.fatherName || !formData.address
+                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                : 'bg-blue-600 text-white hover:bg-blue-700'
+                        }`}
+                    >
+                        {isLoading ? 'Submitting...' : 'Submit KYC Details'}
                     </button>
                 </div>
             </div>

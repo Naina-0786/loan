@@ -1,21 +1,64 @@
 import React, { useState, useEffect } from 'react';
 import { useStepper } from '../../../contexts/StepperContext';
 import { EMIData } from '../../../types/stepper';
-import { calculateEMI, formatCurrency, formatNumber } from '../../../utils/loanCalculator';
+import { calculateEMI, formatCurrency } from '../../../utils/loanCalculator';
 import { Calculator, IndianRupee, Calendar, Percent } from 'lucide-react';
+import { updateLoanApplication } from '../../../api/loanApplicationApi';
+import { toast } from 'sonner';
 
 export default function EMICalculatorStep() {
-    const { updateStepData } = useStepper();
+    const { updateStepData, dispatch, state } = useStepper();
     const [formData, setFormData] = useState<EMIData>({
         loanAmount: 500000,
-        interestRate: 10.5,
+        interestRate: 2, // Fixed at 2%
         tenure: 60,
         tenureType: 'months',
         calculatedEMI: 0,
         totalInterest: 0,
         totalPayment: 0
     });
+    const [hasSubmitted, setHasSubmitted] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const [isLoading, setIsLoading] = useState(false);
+
+    // Load existing data on component mount
+    useEffect(() => {
+        const loadExistingData = async () => {
+            try {
+                const applicationId = localStorage.getItem('loanApplicationId');
+                if (applicationId && state.applicationData) {
+                    const appData = state.applicationData;
+                    if (appData.loanAmount && appData.interest && appData.loanTenure) {
+                        const loanAmount = parseFloat(appData.loanAmount);
+                        const tenure = appData.loanTenure;
+
+                        // Determine tenure type based on value
+                        const tenureType = tenure > 60 ? 'years' : 'months';
+                        const tenureValue = tenureType === 'years' ? tenure / 12 : tenure;
+
+                        const existingData = {
+                            loanAmount,
+                            interestRate: 2, // Always keep at 2%
+                            tenure: tenureValue,
+                            tenureType: tenureType as 'months' | 'years',
+                            calculatedEMI: 0,
+                            totalInterest: 0,
+                            totalPayment: 0
+                        };
+
+                        setFormData(existingData);
+                        updateStepData(2, existingData);
+                        setHasSubmitted(true);
+                        dispatch({ type: 'SET_STEP_VALID', payload: { stepId: 2, isValid: true } });
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load existing EMI data:', error);
+            }
+        };
+
+        loadExistingData();
+    }, [state.applicationData, updateStepData, dispatch]);
 
     // Calculate EMI whenever form data changes
     useEffect(() => {
@@ -37,11 +80,42 @@ export default function EMICalculatorStep() {
 
                 setFormData(updatedData);
                 updateStepData(2, updatedData);
+
+                // Only mark as valid if user has submitted the form
+                if (hasSubmitted) {
+                    dispatch({ type: 'SET_STEP_VALID', payload: { stepId: 2, isValid: true } });
+                }
             } catch (error) {
                 console.error('EMI calculation error:', error);
             }
         }
-    }, [formData.loanAmount, formData.interestRate, formData.tenure, formData.tenureType, updateStepData]);
+    }, [formData.loanAmount, formData.interestRate, formData.tenure, formData.tenureType, updateStepData, hasSubmitted, dispatch]);
+
+    const saveEMIData = async (data: EMIData) => {
+        if (isLoading) return; // Prevent multiple simultaneous calls
+
+        setIsLoading(true);
+        try {
+            const applicationId = localStorage.getItem('loanApplicationId');
+            if (applicationId) {
+                const tenureInMonths = data.tenureType === 'years' ? data.tenure * 12 : data.tenure;
+                await updateLoanApplication(parseInt(applicationId), {
+                    loanAmount: data.loanAmount.toString(),
+                    interest: data.interestRate.toString(),
+                    loanTenure: tenureInMonths.toString() // Convert to string to match Prisma schema
+                });
+
+                // Mark step as valid only after successful submission
+                dispatch({ type: 'SET_STEP_VALID', payload: { stepId: 2, isValid: true } });
+                toast.success("EMI details saved successfully!");
+            }
+        } catch (error) {
+            console.error('Failed to save EMI data:', error);
+            toast.error('Failed to save EMI data');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const handleLoanAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = parseFloat(e.target.value) || 0;
@@ -53,18 +127,6 @@ export default function EMICalculatorStep() {
             setErrors(prev => ({ ...prev, loanAmount: '' }));
         }
         setFormData(prev => ({ ...prev, loanAmount: value }));
-    };
-
-    const handleInterestRateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = parseFloat(e.target.value) || 0;
-        if (value < 1) {
-            setErrors(prev => ({ ...prev, interestRate: 'Interest rate must be at least 1%' }));
-        } else if (value > 50) {
-            setErrors(prev => ({ ...prev, interestRate: 'Interest rate cannot exceed 50%' }));
-        } else {
-            setErrors(prev => ({ ...prev, interestRate: '' }));
-        }
-        setFormData(prev => ({ ...prev, interestRate: value }));
     };
 
     const handleTenureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -100,9 +162,17 @@ export default function EMICalculatorStep() {
         setErrors(prev => ({ ...prev, tenure: '' }));
     };
 
+    // Handle form submission
+    const handleSubmit = async () => {
+        if (formData.loanAmount && formData.interestRate && formData.tenure && !isLoading) {
+            await saveEMIData(formData);
+            setHasSubmitted(true);
+        }
+    };
+
     return (
-        <div className="max-w-4xl mx-auto">
-            <div className="grid md:grid-cols-2 gap-8">
+        <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col md:grid md:grid-cols-2 gap-6 md:gap-8">
                 {/* Input Section */}
                 <div className="space-y-6">
                     <div className="bg-blue-50 p-4 rounded-lg">
@@ -126,8 +196,9 @@ export default function EMICalculatorStep() {
                             value={formData.loanAmount || ''}
                             onChange={handleLoanAmountChange}
                             placeholder="Enter loan amount"
-                            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.loanAmount ? 'border-red-500' : 'border-gray-300'
-                                }`}
+                            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                errors.loanAmount ? 'border-red-500' : 'border-gray-300'
+                            }`}
                             min="50000"
                             max="10000000"
                             step="10000"
@@ -147,18 +218,14 @@ export default function EMICalculatorStep() {
                         <input
                             type="number"
                             value={formData.interestRate || ''}
-                            onChange={handleInterestRateChange}
-                            placeholder="Enter interest rate"
-                            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.interestRate ? 'border-red-500' : 'border-gray-300'
-                                }`}
-                            min="1"
-                            max="50"
-                            step="0.1"
+                            readOnly
+                            placeholder="Interest rate is fixed at 2%"
+                            className="w-full px-3 py-2 border rounded-md bg-gray-100 text-gray-600 cursor-not-allowed"
                         />
                         {errors.interestRate && (
                             <p className="text-red-500 text-sm mt-1">{errors.interestRate}</p>
                         )}
-                        <p className="text-gray-500 text-xs mt-1">Range: 1% - 50%</p>
+                        <p className="text-gray-500 text-xs mt-1">Fixed at 2%</p>
                     </div>
 
                     {/* Tenure */}
@@ -167,14 +234,15 @@ export default function EMICalculatorStep() {
                             <Calendar className="w-4 h-4 inline mr-1" />
                             Loan Tenure *
                         </label>
-                        <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row gap-2">
                             <input
                                 type="number"
                                 value={formData.tenure || ''}
                                 onChange={handleTenureChange}
                                 placeholder="Enter tenure"
-                                className={`flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.tenure ? 'border-red-500' : 'border-gray-300'
-                                    }`}
+                                className={`flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                    errors.tenure ? 'border-red-500' : 'border-gray-300'
+                                }`}
                                 min={formData.tenureType === 'years' ? 1 : 12}
                                 max={formData.tenureType === 'years' ? 30 : 360}
                             />
@@ -182,20 +250,22 @@ export default function EMICalculatorStep() {
                                 <button
                                     type="button"
                                     onClick={() => handleTenureTypeChange('months')}
-                                    className={`px-3 py-1 rounded text-sm font-medium transition-colors ${formData.tenureType === 'months'
+                                    className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                                        formData.tenureType === 'months'
                                             ? 'bg-blue-600 text-white'
                                             : 'text-gray-600 hover:text-gray-800'
-                                        }`}
+                                    }`}
                                 >
                                     Months
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => handleTenureTypeChange('years')}
-                                    className={`px-3 py-1 rounded text-sm font-medium transition-colors ${formData.tenureType === 'years'
+                                    className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                                        formData.tenureType === 'years'
                                             ? 'bg-blue-600 text-white'
                                             : 'text-gray-600 hover:text-gray-800'
-                                        }`}
+                                    }`}
                                 >
                                     Years
                                 </button>
@@ -223,22 +293,22 @@ export default function EMICalculatorStep() {
                         <div className="bg-white border-2 border-blue-200 rounded-lg p-4">
                             <div className="text-center">
                                 <p className="text-sm text-gray-600 mb-1">Monthly EMI</p>
-                                <p className="text-3xl font-bold text-blue-600">
+                                <p className="text-2xl sm:text-3xl font-bold text-blue-600">
                                     {formatCurrency(formData.calculatedEMI || 0)}
                                 </p>
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="bg-white border border-gray-200 rounded-lg p-4 text-center">
                                 <p className="text-sm text-gray-600 mb-1">Total Interest</p>
-                                <p className="text-xl font-semibold text-orange-600">
+                                <p className="text-lg sm:text-xl font-semibold text-orange-600">
                                     {formatCurrency(formData.totalInterest || 0)}
                                 </p>
                             </div>
                             <div className="bg-white border border-gray-200 rounded-lg p-4 text-center">
                                 <p className="text-sm text-gray-600 mb-1">Total Payment</p>
-                                <p className="text-xl font-semibold text-gray-800">
+                                <p className="text-lg sm:text-xl font-semibold text-gray-800">
                                     {formatCurrency(formData.totalPayment || 0)}
                                 </p>
                             </div>
@@ -267,6 +337,21 @@ export default function EMICalculatorStep() {
                         </div>
                     </div>
                 </div>
+            </div>
+
+            {/* Submit Button */}
+            <div className="mt-8 flex justify-center">
+                <button
+                    onClick={handleSubmit}
+                    disabled={isLoading || !formData.loanAmount || !formData.tenure || !!errors.loanAmount || !!errors.tenure}
+                    className={`w-full sm:w-auto px-8 py-3 rounded-lg font-medium transition-colors ${
+                        isLoading || !formData.loanAmount || !formData.tenure || errors.loanAmount || errors.tenure
+                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
+                >
+                    {isLoading ? 'Saving...' : 'Save EMI Details'}
+                </button>
             </div>
         </div>
     );

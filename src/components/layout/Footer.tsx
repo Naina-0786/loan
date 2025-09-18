@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Links } from 'react-router-dom';
 import { DollarSign, Mail, Phone, MapPin } from 'lucide-react';
 
 export default function Footer() {
@@ -30,9 +30,9 @@ export default function Footer() {
               <Link to="/calculator" className="block text-gray-400 hover:text-white transition-colors">
                 EMI Calculator
               </Link>
-              <a href="#faq" className="block text-gray-400 hover:text-white transition-colors">
-                FAQ
-              </a>
+              <Link to="/admin/login" className="block text-gray-400 hover:text-white transition-colors">
+                Admin
+              </Link>
             </div>
           </div>
 

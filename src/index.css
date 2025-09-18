@@ -107,3 +107,27 @@ body {
 .animate-pulse-subtle {
   animation: pulse 2s ease-in-out infinite;
 }
+
+
+/* Add this to your global CSS (e.g., index.css or styles.css) for scrollbar hiding and responsive adjustments */
+@layer utilities {
+  .scrollbar-hide {
+      -ms-overflow-style: none; /* IE and Edge */
+      scrollbar-width: none; /* Firefox */
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+      display: none; /* Chrome, Safari, and Opera */
+  }
+}
+
+/* Ensure content is responsive */
+@media (max-width: 768px) {
+  .fixed.w-64 {
+      width: 100%;
+      height: auto;
+      position: relative;
+  }
+  main {
+      margin-left: 0 !important;
+  }
+}

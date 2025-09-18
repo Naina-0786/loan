@@ -1,9 +1,8 @@
-import React from 'react';
 import { StepperProvider } from '../../contexts/StepperContext';
-import StepperHeader from './StepperHeader';
+import CompletionModal from './CompletionModal';
 import StepContent from './StepContent';
 import StepNavigation from './StepNavigation';
-import CompletionModal from './CompletionModal';
+import StepperHeader from './StepperHeader';
 
 interface LoanApplicationStepperProps {
     className?: string;

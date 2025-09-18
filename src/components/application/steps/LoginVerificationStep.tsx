@@ -1,67 +1,119 @@
+// Updated file: LoginVerificationStep.tsx
 import React, { useState, useEffect } from 'react';
 import { useStepper } from '../../../contexts/StepperContext';
 import { LoginData } from '../../../types/stepper';
+import { toast } from 'sonner';
+import api from '../../../api/apiClient';
+import { AxiosError } from 'axios';
 
 export default function LoginVerificationStep() {
-    const { updateStepData, state } = useStepper();
+    const { updateStepData, state, dispatch } = useStepper();
     const [formData, setFormData] = useState<LoginData>({
-        mobileNumber: '',
+        email: '',
         otp: '',
         isVerified: false
     });
     const [otpSent, setOtpSent] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
 
-    const validateMobileNumber = (number: string): boolean => {
-        const mobileRegex = /^[6-9]\d{9}$/;
-        return mobileRegex.test(number);
+    // Load existing data on component mount
+    useEffect(() => {
+        const applicationId = localStorage.getItem('loanApplicationId');
+        const storedEmail = localStorage.getItem('userEmail');
+
+        if (applicationId && storedEmail && !formData.isVerified) {
+            setFormData(prev => ({
+                ...prev,
+                email: storedEmail,
+                isVerified: true
+            }));
+            setOtpSent(true);
+            dispatch({ type: 'SET_STEP_VALID', payload: { stepId: 1, isValid: true } });
+        } else if (state.applicationData?.email && !formData.isVerified) {
+            setFormData(prev => ({
+                ...prev,
+                email: state.applicationData.email,
+                isVerified: true
+            }));
+            setOtpSent(true);
+            dispatch({ type: 'SET_STEP_VALID', payload: { stepId: 1, isValid: true } });
+        } else {
+            // Reset form if no valid application data or navigating back
+            setFormData({ email: '', otp: '', isVerified: false });
+            setOtpSent(false);
+            dispatch({ type: 'SET_STEP_VALID', payload: { stepId: 1, isValid: false } });
+        }
+    }, [state.applicationData, dispatch]);
+
+    const validateEmail = (email: string): boolean => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
     };
 
     const validateOTP = (otp: string): boolean => {
-        return otp.length === 6 && /^\d+$/.test(otp);
+        return otp.length === 4 && /^\d+$/.test(otp);
     };
 
-    const handleMobileNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value.replace(/\D/g, '').slice(0, 10);
-        setFormData(prev => ({ ...prev, mobileNumber: value }));
-
-        if (errors.mobileNumber) {
-            setErrors(prev => ({ ...prev, mobileNumber: '' }));
+    const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setFormData(prev => ({ ...prev, email: value, isVerified: false, otp: '' }));
+        setOtpSent(false); // Reset OTP sent state when email changes
+        dispatch({ type: 'SET_STEP_VALID', payload: { stepId: 1, isValid: false } });
+        if (errors.email) {
+            setErrors(prev => ({ ...prev, email: '' }));
         }
     };
 
-    const handleSendOTP = () => {
-        if (!validateMobileNumber(formData.mobileNumber)) {
-            setErrors({ mobileNumber: 'Please enter a valid 10-digit mobile number' });
+    const handleSendOTP = async () => {
+        if (!validateEmail(formData.email)) {
+            setErrors({ email: 'Please enter a valid email address' });
             return;
         }
 
-        setOtpSent(true);
-        setErrors({});
-        // In real implementation, this would call an API to send OTP
-        console.log('OTP sent to:', formData.mobileNumber);
+        try {
+            await api.post("/otp/generate", { email: formData.email });
+            setOtpSent(true);
+            setErrors({});
+            toast.success("OTP sent successfully!");
+        } catch (error) {
+            if (error instanceof AxiosError) {
+                toast.error(error.response?.data.message || "Failed to send OTP");
+            } else {
+                toast.error("Failed to send OTP");
+            }
+        }
     };
 
     const handleOTPChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+        const value = e.target.value.replace(/\D/g, '').slice(0, 4);
         setFormData(prev => ({ ...prev, otp: value }));
-
         if (errors.otp) {
             setErrors(prev => ({ ...prev, otp: '' }));
         }
     };
 
-    const handleVerifyOTP = () => {
+    const handleVerifyOTP = async () => {
         if (!validateOTP(formData.otp)) {
-            setErrors({ otp: 'Please enter a valid 6-digit OTP' });
+            setErrors({ otp: 'Please enter a valid 4-digit OTP' });
             return;
         }
 
-        // In real implementation, this would verify OTP with backend
-        const updatedData = { ...formData, isVerified: true };
-        setFormData(updatedData);
-        setErrors({});
-        console.log('OTP verified successfully');
+        try {
+            const verify = await api.post("/otp/verify", { email: formData.email, otp: formData.otp });
+            localStorage.setItem("loanApplicationId", verify.data.data.loanApplication.id);
+            localStorage.setItem("userEmail", formData.email);
+            const updatedData = { ...formData, isVerified: true };
+            setFormData(updatedData);
+            updateStepData(1, updatedData);
+            dispatch({ type: 'SET_STEP_VALID', payload: { stepId: 1, isValid: true } });
+            toast.success("OTP verified successfully");
+        } catch (error) {
+            if (error instanceof AxiosError) {
+                toast.error(error.response?.data.message || "Invalid OTP");
+            } else {
+                toast.error("Invalid OTP");
+            }
+        }
     };
 
     // Update stepper data whenever form data changes
@@ -70,72 +122,67 @@ export default function LoginVerificationStep() {
     }, [formData, updateStepData]);
 
     return (
-        <div className="max-w-md mx-auto">
+        <div className="w-full max-w-md mx-auto sm:p-4">
             <div className="space-y-6">
-                {/* Mobile Number Input */}
+                {/* Email Input */}
                 <div>
-                    <label htmlFor="mobile" className="block text-sm font-medium text-gray-700 mb-2">
-                        Mobile Number *
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                        Email Address *
                     </label>
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2">
                         <input
-                            type="tel"
-                            id="mobile"
-                            value={formData.mobileNumber}
-                            onChange={handleMobileNumberChange}
-                            placeholder="Enter 10-digit mobile number"
-                            className={`flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.mobileNumber ? 'border-red-500' : 'border-gray-300'
-                                }`}
-                            disabled={otpSent}
+                            type="email"
+                            id="email"
+                            value={formData.email}
+                            onChange={handleEmailChange}
+                            placeholder="Enter your email address"
+                            className={`flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                errors.email ? 'border-red-500' : 'border-gray-300'
+                            }`}
                         />
                         <button
                             onClick={handleSendOTP}
-                            disabled={!formData.mobileNumber || otpSent}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                            disabled={!formData.email || !validateEmail(formData.email)}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed sm:w-auto w-full"
                         >
-                            {otpSent ? 'Sent' : 'Send OTP'}
+                            {otpSent && formData.isVerified ? 'Verified' : 'Send OTP'}
                         </button>
                     </div>
-                    {errors.mobileNumber && (
-                        <p className="text-red-500 text-sm mt-1">{errors.mobileNumber}</p>
+                    {errors.email && (
+                        <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+                    )}
+                    {formData.isVerified && (
+                        <p className="text-green-600 text-sm mt-1">✓ Email verified successfully</p>
                     )}
                 </div>
 
                 {/* OTP Input */}
-                {otpSent && (
+                {otpSent && !formData.isVerified && (
                     <div>
                         <label htmlFor="otp" className="block text-sm font-medium text-gray-700 mb-2">
                             Enter OTP *
                         </label>
-                        <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row gap-2">
                             <input
                                 type="text"
                                 id="otp"
                                 value={formData.otp}
                                 onChange={handleOTPChange}
-                                placeholder="Enter 6-digit OTP"
-                                className={`flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.otp ? 'border-red-500' : 'border-gray-300'
-                                    }`}
-                                disabled={formData.isVerified}
+                                placeholder="Enter 4-digit OTP"
+                                className={`flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                    errors.otp ? 'border-red-500' : 'border-gray-300'
+                                }`}
                             />
                             <button
                                 onClick={handleVerifyOTP}
-                                disabled={!formData.otp || formData.isVerified}
-                                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                                disabled={!formData.otp || !validateOTP(formData.otp)}
+                                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed sm:w-auto w-full"
                             >
-                                {formData.isVerified ? 'Verified' : 'Verify'}
+                                Verify
                             </button>
                         </div>
                         {errors.otp && (
                             <p className="text-red-500 text-sm mt-1">{errors.otp}</p>
-                        )}
-                        {formData.isVerified && (
-                            <p className="text-green-600 text-sm mt-1 flex items-center">
-                                <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                </svg>
-                                Mobile number verified successfully!
-                            </p>
                         )}
                     </div>
                 )}
@@ -144,9 +191,9 @@ export default function LoginVerificationStep() {
                 <div className="bg-blue-50 p-4 rounded-md">
                     <h3 className="text-sm font-medium text-blue-800 mb-2">Instructions:</h3>
                     <ul className="text-sm text-blue-700 space-y-1">
-                        <li>• Enter your 10-digit mobile number</li>
+                        <li>• Enter your valid email address</li>
                         <li>• Click "Send OTP" to receive verification code</li>
-                        <li>• Enter the 6-digit OTP and click "Verify"</li>
+                        <li>• Enter the 4-digit OTP and click "Verify"</li>
                         <li>• Once verified, you can proceed to the next step</li>
                     </ul>
                 </div>

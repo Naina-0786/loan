@@ -1,4 +1,3 @@
-import React from 'react';
 import { useStepper } from '../../../contexts/StepperContext';
 import { PaymentData } from '../../../types/stepper';
 import PaymentStep from './PaymentStep';

@@ -3,10 +3,12 @@ import { useStepper } from '../../contexts/StepperContext';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function StepNavigation() {
-    const { state, previousStep, nextStep, validateStep } = useStepper();
+    const { state, previousStep, nextStep, validateStep, canNavigateToStep } = useStepper();
 
     const canGoBack = state.currentStep > 1;
-    const canGoNext = state.currentStep < state.steps.length;
+    const currentStepData = state.steps.find(step => step.id === state.currentStep);
+    const isCurrentStepValid = currentStepData?.isValid || false;
+    const canGoNext = state.currentStep < state.steps.length && isCurrentStepValid && state.canProceed;
     const isLastStep = state.currentStep === state.steps.length;
 
     return (
@@ -23,8 +25,18 @@ export default function StepNavigation() {
                 Previous
             </button>
 
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-gray-500 text-center">
                 {state.isComplete ? 'Application Complete' : `Step ${state.currentStep} of ${state.steps.length}`}
+                {!isCurrentStepValid && !state.isComplete && (
+                    <div className="text-red-500 text-xs mt-1">
+                        Complete current step to proceed
+                    </div>
+                )}
+                {!state.canProceed && !state.isComplete && (
+                    <div className="text-yellow-600 text-xs mt-1">
+                        Waiting for admin verification
+                    </div>
+                )}
             </div>
 
             <button

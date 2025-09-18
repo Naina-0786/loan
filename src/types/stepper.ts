@@ -11,6 +11,8 @@ export interface StepperState {
   currentStep: number;
   steps: StepData[];
   isComplete: boolean;
+  applicationData: any | null;
+  canProceed: boolean;
 }
 
 export interface StepProps {
@@ -21,7 +23,7 @@ export interface StepProps {
 
 // Form data models for each step
 export interface LoginData {
-  mobileNumber: string;
+  email: string;
   otp: string;
   isVerified: boolean;
 }
@@ -37,8 +39,8 @@ export interface EMIData {
 }
 
 export interface KYCData {
-  aadhaarFile: File | null;
-  panFile: File | null;
+  aadhaarNumber: string ;
+  panNumber: string;
   fullName: string;
   fatherName: string;
   address: string;
@@ -70,6 +72,9 @@ export type StepperAction =
   | { type: 'SET_CURRENT_STEP'; payload: number }
   | { type: 'UPDATE_STEP_DATA'; payload: { stepId: number; data: Record<string, any> } }
   | { type: 'SET_STEP_VALID'; payload: { stepId: number; isValid: boolean } }
+  | { type: 'SET_APPLICATION_DATA'; payload: any }
+  | { type: 'SET_CAN_PROCEED'; payload: boolean }
+  | { type: 'LOAD_STEPPER_STATE'; payload: { currentStep: number; completedSteps: number[]; canProceed: boolean } }
   | { type: 'COMPLETE_STEPPER' }
   | { type: 'RESET_STEPPER' };
 
@@ -82,4 +87,6 @@ export interface StepperContextType {
   navigateToStep: (stepId: number) => void;
   nextStep: () => void;
   previousStep: () => void;
+  loadApplicationData: (applicationId: number) => Promise<void>;
+  canNavigateToStep: (stepId: number) => boolean;
 }
