@@ -1,6 +1,5 @@
 import { CreditCard, MapPin, User, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import axios from 'axios';
 import { toast } from 'sonner';
 import api from '../../../api/apiClient';
 

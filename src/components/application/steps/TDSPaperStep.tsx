@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import axios from 'axios';
 import { getLoanApplication, uploadPaymentScreenshot } from '../../../api/loanApplicationApi';
 
 export default function TdsFeeStep() {

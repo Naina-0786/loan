@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import { AlertCircle, CheckCircle, Clock, Download, FileText } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useStepper } from '../../../contexts/StepperContext';
-import { CheckCircle, Clock, FileText, Download, AlertCircle } from 'lucide-react';
 
 export default function ApprovalLetterStep() {
     const { updateStepData, state } = useStepper();

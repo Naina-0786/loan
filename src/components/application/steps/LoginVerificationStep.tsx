@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import axios from 'axios';
 import api from '../../../api/apiClient';
 
 export default function LoginVerificationStep() {

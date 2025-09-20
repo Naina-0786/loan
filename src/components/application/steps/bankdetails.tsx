@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from "react";
 import { Building, CreditCard, Landmark } from "lucide-react";
-import axios from "axios";
+import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import api from "../../../api/apiClient";
 
