@@ -1,14 +1,12 @@
 import { CreditCard, MapPin, User, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import axios from 'axios';
 import { toast } from 'sonner';
-import { updateLoanApplication } from '../../../api/loanApplicationApi';
-import { useStepper } from '../../../contexts/StepperContext';
-import { KYCData } from '../../../types/stepper';
+import api from '../../../api/apiClient';
 
 export default function KYCDocumentStep() {
-    const { updateStepData, dispatch, state } = useStepper();
-    const [formData, setFormData] = useState<KYCData>({
-        aadhaarNumber: '',
+    const [formData, setFormData] = useState({
+        aadharNumber: '',
         panNumber: '',
         fullName: '',
         fatherName: '',
@@ -16,48 +14,89 @@ export default function KYCDocumentStep() {
     });
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [isLoading, setIsLoading] = useState(false);
+    const [isReadOnly, setIsReadOnly] = useState(false);
 
-    // Load existing data on component mount
+    // Fetch loan application data on mount
     useEffect(() => {
-        if (state.applicationData) {
-            const appData = state.applicationData;
-            if (appData.aadhaarNumber || appData.panNumber || appData.fullName || appData.fatherName || appData.address) {
+        const fetchLoanApplication = async () => {
+            const applicationId = localStorage.getItem('loanApplicationId');
+            if (!applicationId) {
+                console.log('No loanApplicationId found in localStorage');
+                setIsReadOnly(false);
+                return;
+            }
+
+            setIsLoading(true);
+            try {
+                const response = await api.get(`/loan-applications/${applicationId}`);
+                const { data } = response.data;
+                console.log('Fetched loan application:', data);
+
+                // Check if all required KYC details are non-null and non-empty
+                const hasKYCDetails =
+                    data.aadhaarNumber?.trim() &&
+                    data.fullName?.trim() &&
+                    data.fatherName?.trim() &&
+                    data.address?.trim();
+
                 setFormData({
-                    aadhaarNumber: appData.aadhaarNumber || '',
-                    panNumber: appData.panNumber || '',
-                    fullName: appData.fullName || '',
-                    fatherName: appData.fatherName || '',
-                    address: appData.address || ''
+                    aadharNumber: data.aadhaarNumber?.trim() || '',
+                    panNumber: data.panNumber?.trim() || '',
+                    fullName: data.fullName?.trim() || '',
+                    fatherName: data.fatherName?.trim() || '',
+                    address: data.address?.trim() || ''
                 });
 
-                // Mark step as valid if all required fields are filled
-                if (appData.aadhaarNumber && appData.fullName && appData.fatherName && appData.address) {
-                    dispatch({ type: 'SET_STEP_VALID', payload: { stepId: 4, isValid: true } });
+                setIsReadOnly(hasKYCDetails);
+                console.log('isReadOnly set to:', hasKYCDetails);
+
+                // Dispatch custom event if KYC details are complete
+                if (hasKYCDetails) {
+                    const event = new CustomEvent('kycDetailsSubmitted', {
+                        detail: { isValid: true, stepId: 4 }
+                    });
+                    window.dispatchEvent(event);
+                    console.log('Dispatched kycDetailsSubmitted event:', { isValid: true, stepId: 4 });
                 }
+            } catch (error: any) {
+                console.error('Failed to fetch KYC details:', error);
+                toast.error(error.response?.data?.message || 'Failed to fetch KYC details');
+                setIsReadOnly(false);
+            } finally {
+                setIsLoading(false);
             }
+        };
+
+        fetchLoanApplication();
+    }, []);
+
+    const handleInputChange = (field: string, value: string) => {
+        if (isReadOnly) {
+            console.log(`Input change blocked for ${field}: Form is read-only`);
+            return;
         }
-    }, [state.applicationData, dispatch]);
 
-    // Update stepper data whenever form data changes
-    useEffect(() => {
-        updateStepData(4, formData);
-    }, [formData, updateStepData]);
+        // Apply input formatting
+        let formattedValue = value;
+        if (field === 'aadhaarNumber') {
+            formattedValue = value.replace(/\D/g, '').slice(0, 12);
+        } else if (field === 'panNumber') {
+            formattedValue = value.toUpperCase().slice(0, 10);
+        }
 
-    const handleInputChange = (field: keyof KYCData, value: string) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
-
-        // Clear error when user starts typing
+        setFormData((prev) => ({ ...prev, [field]: formattedValue }));
         if (errors[field]) {
-            setErrors(prev => ({ ...prev, [field]: '' }));
+            setErrors((prev) => ({ ...prev, [field]: '' }));
         }
+        console.log(`Input changed: ${field} = ${formattedValue}`);
     };
 
     const validateForm = () => {
         const newErrors: Record<string, string> = {};
 
-        if (!formData.aadhaarNumber.trim()) {
+        if (!formData.aadharNumber.trim()) {
             newErrors.aadhaarNumber = 'Aadhaar number is mandatory';
-        } else if (!/^\d{12}$/.test(formData.aadhaarNumber)) {
+        } else if (!/^\d{12}$/.test(formData.aadharNumber)) {
             newErrors.aadhaarNumber = 'Aadhaar number must be 12 digits';
         }
 
@@ -82,31 +121,41 @@ export default function KYCDocumentStep() {
     };
 
     const handleSubmit = async () => {
-        if (validateForm()) {
-            setIsLoading(true);
-            try {
-                const applicationId = localStorage.getItem('loanApplicationId');
-                if (applicationId) {
-                    await updateLoanApplication(parseInt(applicationId), {
-                        aadharNumber: formData.aadhaarNumber,
-                        panNumber: formData.panNumber,
-                        fullName: formData.fullName,
-                        fatherName: formData.fatherName,
-                        address: formData.address
-                    });
+        if (isReadOnly || isLoading || !validateForm()) {
+            console.log('Submit blocked:', { isReadOnly, isLoading, isValid: !Object.keys(errors).length });
+            return;
+        }
 
-                    // Update stepper data and mark step as valid
-                    updateStepData(4, formData);
-                    dispatch({ type: 'SET_STEP_VALID', payload: { stepId: 4, isValid: true } });
-
-                    toast.success('KYC details submitted successfully!');
-                }
-            } catch (error) {
-                console.error('Failed to save KYC details:', error);
-                toast.error('Failed to save KYC details');
-            } finally {
-                setIsLoading(false);
+        setIsLoading(true);
+        try {
+            const applicationId = localStorage.getItem('loanApplicationId');
+            if (!applicationId) {
+                throw new Error('Loan application ID not found');
             }
+
+            await api.post(`/loan-applications/${applicationId}`, {
+                aadhaarNumber: formData.aadharNumber.trim(),
+                panNumber: formData.panNumber.trim() || null,
+                fullName: formData.fullName.trim(),
+                fatherName: formData.fatherName.trim(),
+                address: formData.address.trim()
+            });
+
+            setIsReadOnly(true);
+            toast.success('KYC details submitted successfully!');
+            console.log('KYC details submitted:', formData);
+
+            // Dispatch custom event to signal successful submission
+            const event = new CustomEvent('kycDetailsSubmitted', {
+                detail: { isValid: true, stepId: 4 }
+            });
+            window.dispatchEvent(event);
+            console.log('Dispatched kycDetailsSubmitted event:', { isValid: true, stepId: 4 });
+        } catch (error: any) {
+            console.error('Failed to save KYC details:', error);
+            toast.error(error.response?.data?.message || 'Failed to save KYC details');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -128,6 +177,12 @@ export default function KYCDocumentStep() {
                     </ul>
                 </div>
 
+                {isLoading && (
+                    <div className="flex justify-center mb-6">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    </div>
+                )}
+
                 {/* Document Input Section */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                     {/* Aadhaar Number */}
@@ -138,12 +193,14 @@ export default function KYCDocumentStep() {
                         </label>
                         <input
                             type="text"
-                            value={formData.aadhaarNumber}
-                            onChange={(e) => handleInputChange('aadhaarNumber', e.target.value.replace(/\D/g, '').slice(0, 12))}
+                            value={formData.aadharNumber}
+                            onChange={(e) => handleInputChange('aadharNumber', e.target.value)}
                             placeholder="Enter your Aadhaar number"
                             className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                                 errors.aadhaarNumber ? 'border-red-500' : 'border-gray-300'
-                            }`}
+                            } ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                            readOnly={isReadOnly}
+                            disabled={isLoading}
                         />
                         {errors.aadhaarNumber && (
                             <p className="text-red-500 text-sm mt-1">{errors.aadhaarNumber}</p>
@@ -159,11 +216,13 @@ export default function KYCDocumentStep() {
                         <input
                             type="text"
                             value={formData.panNumber}
-                            onChange={(e) => handleInputChange('panNumber', e.target.value.toUpperCase().slice(0, 10))}
+                            onChange={(e) => handleInputChange('panNumber', e.target.value)}
                             placeholder="Enter your PAN number"
                             className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                                 errors.panNumber ? 'border-red-500' : 'border-gray-300'
-                            }`}
+                            } ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                            readOnly={isReadOnly}
+                            disabled={isLoading}
                         />
                         {errors.panNumber && (
                             <p className="text-red-500 text-sm mt-1">{errors.panNumber}</p>
@@ -190,8 +249,10 @@ export default function KYCDocumentStep() {
                                 onChange={(e) => handleInputChange('fullName', e.target.value)}
                                 placeholder="Enter your full name as per Aadhaar"
                                 className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                                    errors.fullName ? 'border-red-500' : 'border-gray-300'
-                                }`}
+                                    errors.fullName ? 'border-red-red-500' : 'border-gray-300'
+                                } ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                readOnly={isReadOnly}
+                                disabled={isLoading}
                             />
                             {errors.fullName && (
                                 <p className="text-red-500 text-sm mt-1">{errors.fullName}</p>
@@ -211,7 +272,9 @@ export default function KYCDocumentStep() {
                                 placeholder="Enter father's name"
                                 className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                                     errors.fatherName ? 'border-red-500' : 'border-gray-300'
-                                }`}
+                                } ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                readOnly={isReadOnly}
+                                disabled={isLoading}
                             />
                             {errors.fatherName && (
                                 <p className="text-red-500 text-sm mt-1">{errors.fatherName}</p>
@@ -232,7 +295,9 @@ export default function KYCDocumentStep() {
                             rows={3}
                             className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                                 errors.address ? 'border-red-500' : 'border-gray-300'
-                            }`}
+                            } ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                            readOnly={isReadOnly}
+                            disabled={isLoading}
                         />
                         {errors.address && (
                             <p className="text-red-500 text-sm mt-1">{errors.address}</p>
@@ -244,22 +309,31 @@ export default function KYCDocumentStep() {
                 <div className="flex flex-col sm:flex-row justify-center gap-4">
                     <button
                         onClick={validateForm}
-                        className="w-full sm:w-auto px-6 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+                        disabled={isLoading || isReadOnly}
+                        className={`w-full sm:w-auto px-6 py-2 rounded-md font-medium transition-colors ${
+                            isLoading || isReadOnly ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-gray-600 text-white hover:bg-gray-700'
+                        }`}
                     >
                         Validate Information
                     </button>
                     <button
                         onClick={handleSubmit}
-                        disabled={isLoading || Object.keys(errors).length > 0 || !formData.aadhaarNumber || !formData.fullName || !formData.fatherName || !formData.address}
+                        disabled={isLoading || isReadOnly || Object.keys(errors).length > 0 || !formData.aadharNumber || !formData.fullName || !formData.fatherName || !formData.address}
                         className={`w-full sm:w-auto px-6 py-2 rounded-md font-medium transition-colors ${
-                            isLoading || Object.keys(errors).length > 0 || !formData.aadhaarNumber || !formData.fullName || !formData.fatherName || !formData.address
+                            isLoading || isReadOnly || Object.keys(errors).length > 0 || !formData.aadharNumber || !formData.fullName || !formData.fatherName || !formData.address
                                 ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                 : 'bg-blue-600 text-white hover:bg-blue-700'
                         }`}
                     >
-                        {isLoading ? 'Submitting...' : 'Submit KYC Details'}
+                        {isLoading ? 'Submitting...' : isReadOnly ? 'KYC Details Saved' : 'Submit KYC Details'}
                     </button>
                 </div>
+
+                {isReadOnly && (
+                    <p className="text-green-600 text-sm text-center mt-4">
+                        ✓ KYC details saved successfully
+                    </p>
+                )}
             </div>
         </div>
     );

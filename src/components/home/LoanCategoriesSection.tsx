@@ -27,7 +27,7 @@ export default function LoanCategoriesSection() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {loanTypes.map((loan, index) => {
             const IconComponent = Icons[loan.icon as keyof typeof Icons] as React.ComponentType<any>;
-            
+
             return (
               <motion.div
                 key={loan.id}
@@ -41,18 +41,18 @@ export default function LoanCategoriesSection() {
                     <div className="bg-gradient-to-r from-blue-100 to-emerald-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
                       <IconComponent className="h-8 w-8 text-blue-600" />
                     </div>
-                    
+
                     <h3 className="text-xl font-semibold text-gray-900 mb-2">
                       {loan.name}
                     </h3>
-                    
+
                     <p className="text-gray-600 mb-4">
                       {loan.description}
                     </p>
-                    
+
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-gray-500">Interest Rate:</span>
+                        <span className="text-gray-500">Interest Rate:2%</span>
                         <span className="font-semibold text-emerald-600">{loan.interestRate}</span>
                       </div>
                       <div className="flex justify-between">
@@ -60,7 +60,7 @@ export default function LoanCategoriesSection() {
                         <span className="font-semibold text-blue-600">{loan.maxAmount}</span>
                       </div>
                     </div>
-                    
+
                     <div className="mt-4 text-blue-600 font-medium group-hover:text-blue-700 transition-colors">
                       Apply Now →
                     </div>

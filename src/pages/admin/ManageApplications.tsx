@@ -19,6 +19,15 @@ const ManageApplications: React.FC = () => {
         fetchApplications();
     }, [searchTerm, statusFilter, currentPage]);
 
+    useEffect(() => {
+        const token = localStorage.getItem("dhani_admin_token");
+        if (token) {
+            navigate("/admin/manage-admin")
+        } else {
+            navigate("/admin/login")
+        }
+    },[])
+
     const fetchApplications = async () => {
         setLoading(true);
         try {

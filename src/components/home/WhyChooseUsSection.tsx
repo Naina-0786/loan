@@ -16,7 +16,7 @@ export default function WhyChooseUsSection() {
           className="text-center mb-16"
         >
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-            Why Choose LoanFlow?
+            Why Choose instantdhanicredit?
           </h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             We're committed to making your loan journey smooth, transparent, and hassle-free
@@ -26,7 +26,7 @@ export default function WhyChooseUsSection() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {benefits.map((benefit, index) => {
             const IconComponent = Icons[benefit.icon as keyof typeof Icons] as React.ComponentType<any>;
-            
+
             return (
               <motion.div
                 key={index}
@@ -39,11 +39,11 @@ export default function WhyChooseUsSection() {
                   <div className="bg-gradient-to-r from-blue-500 to-emerald-500 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
                     <IconComponent className="h-8 w-8 text-white" />
                   </div>
-                  
+
                   <h3 className="text-xl font-semibold text-gray-900 mb-3">
                     {benefit.title}
                   </h3>
-                  
+
                   <p className="text-gray-600 leading-relaxed">
                     {benefit.description}
                   </p>

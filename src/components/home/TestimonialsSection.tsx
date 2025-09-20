@@ -7,7 +7,7 @@ const testimonials = [
   {
     name: 'Priya Sharma',
     role: 'Software Engineer',
-    content: 'LoanFlow made my home loan process incredibly smooth. The team was professional and the rates were competitive.',
+    content: 'instantdhanicredit made my home loan process incredibly smooth. The team was professional and the rates were competitive.',
     rating: 5,
     image: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop'
   },
@@ -87,17 +87,17 @@ export default function TestimonialsSection() {
                     alt={testimonials[currentIndex].name}
                     className="w-20 h-20 rounded-full mx-auto mb-6 object-cover"
                   />
-                  
+
                   <div className="flex justify-center mb-4">
                     {[...Array(testimonials[currentIndex].rating)].map((_, i) => (
                       <Star key={i} className="h-5 w-5 text-yellow-400 fill-current" />
                     ))}
                   </div>
-                  
+
                   <blockquote className="text-lg text-gray-700 mb-6 italic">
                     "{testimonials[currentIndex].content}"
                   </blockquote>
-                  
+
                   <div>
                     <div className="font-semibold text-gray-900">
                       {testimonials[currentIndex].name}
@@ -117,7 +117,7 @@ export default function TestimonialsSection() {
             >
               <ChevronLeft className="h-6 w-6 text-gray-600" />
             </button>
-            
+
             <button
               onClick={nextTestimonial}
               className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-3 shadow-lg hover:shadow-xl transition-shadow duration-200"
@@ -132,9 +132,8 @@ export default function TestimonialsSection() {
               <button
                 key={index}
                 onClick={() => setCurrentIndex(index)}
-                className={`w-3 h-3 rounded-full transition-all duration-200 ${
-                  index === currentIndex ? 'bg-blue-600' : 'bg-gray-300'
-                }`}
+                className={`w-3 h-3 rounded-full transition-all duration-200 ${index === currentIndex ? 'bg-blue-600' : 'bg-gray-300'
+                  }`}
               />
             ))}
           </div>

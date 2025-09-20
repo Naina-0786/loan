@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit, Trash2, Eye, EyeOff } from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import { getAllAdmins, createAdmin, updateAdmin, deleteAdmin, Admin, AdminFormData } from '../../api/adminApi';
+import { useNavigate } from 'react-router-dom';
 
 // Interfaces are now imported from adminApi
 
@@ -22,6 +23,16 @@ const ManageAdmin: React.FC = () => {
     useEffect(() => {
         fetchAdmins();
     }, []);
+
+    const navigate = useNavigate()
+    useEffect(() => {
+        const token = localStorage.getItem("dhani_admin_token");
+        if (token) {
+            navigate("/admin/manage-admin")
+        } else {
+            navigate("/admin/login")
+        }
+    },[])
 
     const fetchAdmins = async () => {
         try {

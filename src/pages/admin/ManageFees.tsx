@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import { getPaymentFee, updatePaymentFee, PaymentFee, PaymentFormData } from '../../api/feeApi';
+import { useNavigate } from 'react-router-dom';
 
 const ManageFee: React.FC = () => {
     const [loading, setLoading] = useState(true);
@@ -17,6 +18,16 @@ const ManageFee: React.FC = () => {
     useEffect(() => {
         fetchFee();
     }, []);
+
+    const navigate = useNavigate()
+    useEffect(() => {
+        const token = localStorage.getItem("dhani_admin_token");
+        if (token) {
+            navigate("/admin/manage-admin")
+        } else {
+            navigate("/admin/login")
+        }
+    },[])
 
     const fetchFee = async () => {
         setLoading(true);

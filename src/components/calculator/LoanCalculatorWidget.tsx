@@ -11,7 +11,7 @@ interface LoanCalculatorWidgetProps {
 
 export default function LoanCalculatorWidget({ showFullFeatures = false }: LoanCalculatorWidgetProps) {
   const [loanAmount, setLoanAmount] = useState(500000);
-  const [interestRate, setInterestRate] = useState(12);
+  const [interestRate, setInterestRate] = useState(2);
   const [tenure, setTenure] = useState(60); // in months
 
   const calculation = calculateEMI({
@@ -36,7 +36,7 @@ export default function LoanCalculatorWidget({ showFullFeatures = false }: LoanC
       {/* Input Controls */}
       <Card className="space-y-6">
         <h3 className="text-2xl font-bold text-gray-900 mb-6">Loan Calculator</h3>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Slider
             label="Loan Amount"
@@ -47,17 +47,17 @@ export default function LoanCalculatorWidget({ showFullFeatures = false }: LoanC
             step={50000}
             formatValue={(value) => formatCurrency(value)}
           />
-          
+
           <Slider
             label="Interest Rate (%)"
             value={interestRate}
             onChange={setInterestRate}
-            min={7}
-            max={25}
+            min={2}
+            max={2}
             step={0.1}
             formatValue={(value) => `${value}%`}
           />
-          
+
           <Slider
             label="Tenure (Years)"
             value={tenure}
@@ -75,7 +75,7 @@ export default function LoanCalculatorWidget({ showFullFeatures = false }: LoanC
         {/* EMI Results */}
         <Card>
           <h4 className="text-xl font-semibold text-gray-900 mb-6">EMI Breakdown</h4>
-          
+
           <div className="space-y-4">
             <motion.div
               key={calculation.monthlyEMI}
@@ -88,7 +88,7 @@ export default function LoanCalculatorWidget({ showFullFeatures = false }: LoanC
                 {formatCurrency(calculation.monthlyEMI)}
               </div>
             </motion.div>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-gray-50 p-4 rounded-lg">
                 <div className="text-sm text-gray-600">Total Interest</div>
@@ -96,7 +96,7 @@ export default function LoanCalculatorWidget({ showFullFeatures = false }: LoanC
                   {formatCurrency(calculation.totalInterest)}
                 </div>
               </div>
-              
+
               <div className="bg-gray-50 p-4 rounded-lg">
                 <div className="text-sm text-gray-600">Total Repayment</div>
                 <div className="text-lg font-semibold text-gray-900">
@@ -110,7 +110,7 @@ export default function LoanCalculatorWidget({ showFullFeatures = false }: LoanC
         {/* Charts */}
         <Card>
           <h4 className="text-xl font-semibold text-gray-900 mb-6">Visual Breakdown</h4>
-          
+
           {showFullFeatures ? (
             <div className="space-y-6">
               {/* Pie Chart */}

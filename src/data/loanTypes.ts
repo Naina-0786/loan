@@ -6,7 +6,7 @@ export const loanTypes: LoanType[] = [
     name: 'Personal Loan',
     description: 'Instant funds for your personal needs with minimal documentation',
     icon: 'User',
-    interestRate: '10.99% - 24%',
+    interestRate: '2%',
     maxAmount: '₹50 Lakhs'
   },
   {
@@ -14,7 +14,7 @@ export const loanTypes: LoanType[] = [
     name: 'Home Loan',
     description: 'Finance your dream home with attractive interest rates',
     icon: 'Home',
-    interestRate: '8.5% - 12%',
+    interestRate: '2%',
     maxAmount: '₹10 Crores'
   },
   {
@@ -22,7 +22,7 @@ export const loanTypes: LoanType[] = [
     name: 'Car Loan',
     description: 'Drive your dream car with easy financing options',
     icon: 'Car',
-    interestRate: '7.5% - 15%',
+    interestRate: '2%',
     maxAmount: '₹2 Crores'
   },
   {
@@ -30,7 +30,7 @@ export const loanTypes: LoanType[] = [
     name: 'Business Loan',
     description: 'Fuel your business growth with flexible loan solutions',
     icon: 'Building2',
-    interestRate: '12% - 20%',
+    interestRate: '2%',
     maxAmount: '₹5 Crores'
   },
   {
@@ -38,7 +38,7 @@ export const loanTypes: LoanType[] = [
     name: 'Education Loan',
     description: 'Invest in your future with education financing',
     icon: 'GraduationCap',
-    interestRate: '9% - 16%',
+    interestRate: '2%',
     maxAmount: '₹1.5 Crores'
   },
   {
@@ -46,7 +46,7 @@ export const loanTypes: LoanType[] = [
     name: 'Startup Loan',
     description: 'Turn your innovative ideas into successful ventures',
     icon: 'Rocket',
-    interestRate: '14% - 22%',
+    interestRate: '2%',
     maxAmount: '₹2 Crores'
   }
 ];
@@ -83,7 +83,7 @@ export const howItWorksSteps = [
   {
     step: 1,
     title: 'Apply',
-    description: 'Fill out our simple online application form',
+    description: 'Fill out our simple online application form and upload your documents',
     icon: 'FileText'
   },
   {

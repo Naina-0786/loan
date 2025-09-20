@@ -24,12 +24,12 @@ export default function HowItWorksSection() {
 
         <div className="relative">
           {/* Timeline Line */}
-          <div className="hidden lg:block absolute top-1/2 left-0 right-0 h-1 bg-gradient-to-r from-blue-300 to-emerald-300 transform -translate-y-1/2" />
-          
+          {/* <div className="hidden lg:block absolute top-1/2 left-0 right-0 h-1 bg-gradient-to-r from-blue-300 to-emerald-300 transform -translate-y-1/2" /> */}
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {howItWorksSteps.map((step, index) => {
               const IconComponent = Icons[step.icon as keyof typeof Icons] as React.ComponentType<any>;
-              
+
               return (
                 <motion.div
                   key={index}
@@ -45,7 +45,7 @@ export default function HowItWorksSection() {
                       <IconComponent className="h-6 w-6 text-white" />
                     </div>
                   </div>
-                  
+
                   {/* Step Info */}
                   <div className="bg-white rounded-xl p-6 shadow-lg">
                     <div className="text-sm font-bold text-blue-600 mb-2">STEP {step.step}</div>

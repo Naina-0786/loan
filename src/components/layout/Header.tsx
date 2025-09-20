@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
-import Button from '../ui/Button';
+import React, { useState } from "react";
+import { Menu, X } from "lucide-react";
+import Button from "../ui/Button";
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -10,21 +9,29 @@ export default function Header() {
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-100">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
+          {/* Logo → Home using window */}
+          <div
+            className="flex items-center space-x-2 cursor-pointer"
+            onClick={() => {
+              setMenuOpen(false); // close menu if open
+              window.location.href = "/"; // go home
+            }}
+          >
             <img
               src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT6S4MCoi-TuAFNAd1V-U-uscxa9w2HIchmPA&s"
               alt="Dhani Finance Logo"
-              className="h-10 w-15 object-contain"
+              className="h-10 w-auto object-contain"
             />
-            {/* <span className="text-xl font-bold text-gray-900">Dhani Finance</span> */}
-          </Link>
+          </div>
 
           {/* CTA + Mobile Menu Button */}
           <div className="flex items-center space-x-4">
-            <Link to="/apply" className="hidden sm:block">
+            <button
+              onClick={() => (window.location.href = "/apply")}
+              className="hidden sm:block"
+            >
               <Button size="sm">Apply Now</Button>
-            </Link>
+            </button>
 
             {/* Mobile menu button */}
             <button
@@ -41,9 +48,16 @@ export default function Header() {
       {menuOpen && (
         <div className="md:hidden bg-white border-t border-gray-100 shadow-sm">
           <nav className="flex flex-col p-4 space-y-4">
-            <Link to="/apply" onClick={() => setMenuOpen(false)}>
-              <Button size="sm" className="w-full">Apply Now</Button>
-            </Link>
+            <button
+              onClick={() => {
+                setMenuOpen(false);
+                window.location.href = "/apply";
+              }}
+            >
+              <Button size="sm" className="w-full">
+                Apply Now
+              </Button>
+            </button>
           </nav>
         </div>
       )}

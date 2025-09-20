@@ -19,7 +19,7 @@ import ManageApplications from "./pages/admin/ManageApplications";
 import LoanApplicationDetail from "./components/admin/LoanApplicationDetail";
 import TestConnection from "./components/TestConnection";
 
-// ✅ Wrapper component to conditionally hide Header/Footer
+// ✅ Layout wrapper to hide Header/Footer on admin pages
 const LayoutWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith("/admin");
@@ -27,7 +27,7 @@ const LayoutWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   return (
     <div className="min-h-screen flex flex-col">
       {!isAdminRoute && <Header />}
-      <main className="flex-1">{children}</main>
+      <main className="flex-1 pt-16">{children}</main> {/* pt-16 avoids navbar overlap */}
       {!isAdminRoute && <Footer />}
     </div>
   );
@@ -46,15 +46,15 @@ function App() {
           <Route path="/loan-applications" element={<LoanApplicationStepper />} />
           <Route path="/test" element={<TestConnection />} />
 
-          {/* Admin routes (no Header/Footer) */}
+          {/* Admin routes */}
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin/manage-admin" element={<ManageAdmin />} />
           <Route path="/admin/manage-fees" element={<ManageFee />} />
           <Route path="/admin/manage-applications" element={<ManageApplications />} />
           <Route path="/admin/loan-applications/:id" element={<LoanApplicationDetail />} />
 
-          {/* Redirect admin root to dashboard */}
-          <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+          {/* Redirect /admin to login (instead of dashboard that doesn’t exist) */}
+          <Route path="/admin" element={<Navigate to="/admin/login" replace />} />
         </Routes>
       </LayoutWrapper>
     </Router>

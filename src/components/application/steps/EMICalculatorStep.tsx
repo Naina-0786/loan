@@ -20,6 +20,7 @@ export default function EMICalculatorStep() {
     const [hasSubmitted, setHasSubmitted] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [isLoading, setIsLoading] = useState(false);
+    const [isReadOnly, setIsReadOnly] = useState(false);
 
     // Load existing data on component mount
     useEffect(() => {
@@ -28,13 +29,13 @@ export default function EMICalculatorStep() {
                 const applicationId = localStorage.getItem('loanApplicationId');
                 if (applicationId && state.applicationData) {
                     const appData = state.applicationData;
-                    if (appData.loanAmount && appData.interest && appData.loanTenure) {
+                    if (appData.loanAmount && appData.loanTenure) {
                         const loanAmount = parseFloat(appData.loanAmount);
-                        const tenure = appData.loanTenure;
+                        const tenure = parseInt(appData.loanTenure);
 
                         // Determine tenure type based on value
                         const tenureType = tenure > 60 ? 'years' : 'months';
-                        const tenureValue = tenureType === 'years' ? tenure / 12 : tenure;
+                        const tenureValue = tenureType === 'years' ? Math.round(tenure / 12) : tenure;
 
                         const existingData = {
                             loanAmount,
@@ -49,11 +50,17 @@ export default function EMICalculatorStep() {
                         setFormData(existingData);
                         updateStepData(2, existingData);
                         setHasSubmitted(true);
+                        setIsReadOnly(true); // Disable inputs and submit button
                         dispatch({ type: 'SET_STEP_VALID', payload: { stepId: 2, isValid: true } });
+                    } else {
+                        // No backend data, allow user input
+                        setIsReadOnly(false);
+                        dispatch({ type: 'SET_STEP_VALID', payload: { stepId: 2, isValid: false } });
                     }
                 }
             } catch (error) {
                 console.error('Failed to load existing EMI data:', error);
+                toast.error('Failed to load EMI data');
             }
         };
 
@@ -81,18 +88,19 @@ export default function EMICalculatorStep() {
                 setFormData(updatedData);
                 updateStepData(2, updatedData);
 
-                // Only mark as valid if user has submitted the form
-                if (hasSubmitted) {
+                // Only mark as valid if user has submitted the form and it's not read-only
+                if (hasSubmitted && !isReadOnly) {
                     dispatch({ type: 'SET_STEP_VALID', payload: { stepId: 2, isValid: true } });
                 }
             } catch (error) {
                 console.error('EMI calculation error:', error);
+                toast.error('Failed to calculate EMI');
             }
         }
-    }, [formData.loanAmount, formData.interestRate, formData.tenure, formData.tenureType, updateStepData, hasSubmitted, dispatch]);
+    }, [formData.loanAmount, formData.interestRate, formData.tenure, formData.tenureType, updateStepData, hasSubmitted, dispatch, isReadOnly]);
 
     const saveEMIData = async (data: EMIData) => {
-        if (isLoading) return; // Prevent multiple simultaneous calls
+        if (isLoading || isReadOnly) return; // Prevent submission if read-only or loading
 
         setIsLoading(true);
         try {
@@ -105,19 +113,22 @@ export default function EMICalculatorStep() {
                     loanTenure: tenureInMonths.toString() // Convert to string to match Prisma schema
                 });
 
-                // Mark step as valid only after successful submission
+                // Mark step as valid and set read-only after successful submission
+                setHasSubmitted(true);
+                setIsReadOnly(true);
                 dispatch({ type: 'SET_STEP_VALID', payload: { stepId: 2, isValid: true } });
-                toast.success("EMI details saved successfully!");
+                toast.success('EMI details saved successfully!');
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to save EMI data:', error);
-            toast.error('Failed to save EMI data');
+            toast.error(error.response?.data?.message || 'Failed to save EMI data');
         } finally {
             setIsLoading(false);
         }
     };
 
     const handleLoanAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (isReadOnly) return; // Prevent changes if read-only
         const value = parseFloat(e.target.value) || 0;
         if (value < 50000) {
             setErrors(prev => ({ ...prev, loanAmount: 'Minimum loan amount is ₹50,000' }));
@@ -130,6 +141,7 @@ export default function EMICalculatorStep() {
     };
 
     const handleTenureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (isReadOnly) return; // Prevent changes if read-only
         const value = parseInt(e.target.value) || 0;
         const maxTenure = formData.tenureType === 'years' ? 30 : 360;
         const minTenure = formData.tenureType === 'years' ? 1 : 12;
@@ -151,6 +163,7 @@ export default function EMICalculatorStep() {
     };
 
     const handleTenureTypeChange = (type: 'months' | 'years') => {
+        if (isReadOnly) return; // Prevent changes if read-only
         const currentTenureInMonths = formData.tenureType === 'years' ? formData.tenure * 12 : formData.tenure;
         const newTenure = type === 'years' ? Math.round(currentTenureInMonths / 12) : currentTenureInMonths;
 
@@ -164,10 +177,10 @@ export default function EMICalculatorStep() {
 
     // Handle form submission
     const handleSubmit = async () => {
-        if (formData.loanAmount && formData.interestRate && formData.tenure && !isLoading) {
-            await saveEMIData(formData);
-            setHasSubmitted(true);
+        if (isReadOnly || isLoading || !formData.loanAmount || !formData.tenure || errors.loanAmount || errors.tenure) {
+            return;
         }
+        await saveEMIData(formData);
     };
 
     return (
@@ -181,7 +194,7 @@ export default function EMICalculatorStep() {
                             Loan Details
                         </h3>
                         <p className="text-blue-700 text-sm">
-                            Enter your loan requirements to calculate EMI
+                            {isReadOnly ? 'Your loan details are saved and cannot be modified.' : 'Enter your loan requirements to calculate EMI'}
                         </p>
                     </div>
 
@@ -198,10 +211,12 @@ export default function EMICalculatorStep() {
                             placeholder="Enter loan amount"
                             className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                                 errors.loanAmount ? 'border-red-500' : 'border-gray-300'
-                            }`}
+                            } ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                             min="50000"
                             max="10000000"
                             step="10000"
+                            readOnly={isReadOnly}
+                            disabled={isLoading}
                         />
                         {errors.loanAmount && (
                             <p className="text-red-500 text-sm mt-1">{errors.loanAmount}</p>
@@ -242,9 +257,11 @@ export default function EMICalculatorStep() {
                                 placeholder="Enter tenure"
                                 className={`flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                                     errors.tenure ? 'border-red-500' : 'border-gray-300'
-                                }`}
+                                } ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                                 min={formData.tenureType === 'years' ? 1 : 12}
                                 max={formData.tenureType === 'years' ? 30 : 360}
+                                readOnly={isReadOnly}
+                                disabled={isLoading}
                             />
                             <div className="flex bg-gray-100 rounded-md p-1">
                                 <button
@@ -254,7 +271,8 @@ export default function EMICalculatorStep() {
                                         formData.tenureType === 'months'
                                             ? 'bg-blue-600 text-white'
                                             : 'text-gray-600 hover:text-gray-800'
-                                    }`}
+                                    } ${isReadOnly ? 'cursor-not-allowed opacity-50' : ''}`}
+                                    disabled={isReadOnly || isLoading}
                                 >
                                     Months
                                 </button>
@@ -265,7 +283,8 @@ export default function EMICalculatorStep() {
                                         formData.tenureType === 'years'
                                             ? 'bg-blue-600 text-white'
                                             : 'text-gray-600 hover:text-gray-800'
-                                    }`}
+                                    } ${isReadOnly ? 'cursor-not-allowed opacity-50' : ''}`}
+                                    disabled={isReadOnly || isLoading}
                                 >
                                     Years
                                 </button>
@@ -343,14 +362,14 @@ export default function EMICalculatorStep() {
             <div className="mt-8 flex justify-center">
                 <button
                     onClick={handleSubmit}
-                    disabled={isLoading || !formData.loanAmount || !formData.tenure || !!errors.loanAmount || !!errors.tenure}
+                    disabled={isLoading || isReadOnly || !formData.loanAmount || !formData.tenure || !!errors.loanAmount || !!errors.tenure}
                     className={`w-full sm:w-auto px-8 py-3 rounded-lg font-medium transition-colors ${
-                        isLoading || !formData.loanAmount || !formData.tenure || errors.loanAmount || errors.tenure
+                        isLoading || isReadOnly || !formData.loanAmount || !formData.tenure || errors.loanAmount || errors.tenure
                             ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                             : 'bg-blue-600 text-white hover:bg-blue-700'
                     }`}
                 >
-                    {isLoading ? 'Saving...' : 'Save EMI Details'}
+                    {isLoading ? 'Saving...' : isReadOnly ? 'EMI Details Saved' : 'Save EMI Details'}
                 </button>
             </div>
         </div>
