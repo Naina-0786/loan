@@ -34,6 +34,7 @@ const AdminLogin: React.FC = () => {
             // Redirect to admin dashboard
             navigate('/admin/manage-admin');
         } catch (error: any) {
+            console.log(error); 
             if(error instanceof AxiosError){
                 setError(error.response?.data.message || 'Login failed. Please check your credentials.');
             } else {

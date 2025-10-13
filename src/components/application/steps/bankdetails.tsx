@@ -2,8 +2,10 @@ import { Building, CreditCard, Landmark } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import api from "../../../api/apiClient";
+import { useStepper } from "../../../contexts/StepperContext";
 
 export default function BankDetailsPage() {
+    const { updateStepData, dispatch } = useStepper();
     const [formData, setFormData] = useState({
         bankName: "",
         accountNumber: "",
@@ -15,24 +17,27 @@ export default function BankDetailsPage() {
 
     // Fetch loan application data on mount
     useEffect(() => {
-        const fetchLoanApplication = async () => {
-            const applicationId = localStorage.getItem("loanApplicationId");
-            if (!applicationId) {
-                console.log("No loanApplicationId found in localStorage");
-                setIsReadOnly(false);
-                return;
-            }
+        const applicationId = localStorage.getItem("loanApplicationId");
+        if (!applicationId) {
+            console.log("No loanApplicationId found in localStorage");
+            setIsReadOnly(false);
+            return;
+        }
 
+        let isMounted = true; // Prevent updates after unmount
+        const fetchLoanApplication = async () => {
             setIsLoading(true);
             try {
                 const response = await api.get(`/loan-applications/${applicationId}`);
                 const { data } = response.data;
                 console.log("Fetched loan application:", data);
 
+                if (!isMounted) return; // Prevent state updates if unmounted
+
                 // Check if all bank details are non-null and non-empty
-                const hasBankDetails = 
-                    data.bankName?.trim() && 
-                    data.accountNumber?.trim() && 
+                const hasBankDetails =
+                    data.bankName?.trim() &&
+                    data.accountNumber?.trim() &&
                     data.ifscCode?.trim();
 
                 setFormData({
@@ -44,25 +49,33 @@ export default function BankDetailsPage() {
                 setIsReadOnly(hasBankDetails);
                 console.log("isReadOnly set to:", hasBankDetails);
 
-                // Dispatch custom event if bank details are complete
+                // Update stepper state if bank details are complete
                 if (hasBankDetails) {
-                    const event = new CustomEvent("bankDetailsSubmitted", {
-                        detail: { isValid: true, stepId: 3 }
+                    dispatch({ type: 'SET_STEP_VALID', payload: { stepId: 3, isValid: true } });
+                    dispatch({ type: 'SET_CAN_PROCEED', payload: true });
+                    updateStepData(3, {
+                        bankName: data.bankName,
+                        accountNumber: data.accountNumber,
+                        ifscCode: data.ifscCode
                     });
-                    window.dispatchEvent(event);
-                    console.log("Dispatched bankDetailsSubmitted event:", { isValid: true, stepId: 3 });
                 }
             } catch (error: any) {
                 console.error("Failed to fetch loan application:", error);
-                toast.error(error.response?.data?.message || "Failed to fetch bank details");
-                setIsReadOnly(false);
+                if (isMounted) {
+                    toast.error(error.response?.data?.message || "Failed to fetch bank details");
+                    setIsReadOnly(false);
+                }
             } finally {
-                setIsLoading(false);
+                if (isMounted) setIsLoading(false);
             }
         };
 
         fetchLoanApplication();
-    }, []);
+
+        return () => {
+            isMounted = false; // Cleanup to prevent state updates after unmount
+        };
+    }, []); // Dependencies unchanged
 
     const handleInputChange = (field: string, value: string) => {
         if (isReadOnly) {
@@ -88,14 +101,10 @@ export default function BankDetailsPage() {
 
         if (!formData.accountNumber.trim()) {
             newErrors.accountNumber = "Account number is required";
-        } else if (!/^[0-9]{9,18}$/.test(formData.accountNumber)) {
-            newErrors.accountNumber = "Invalid account number format (9-18 digits)";
         }
 
         if (!formData.ifscCode.trim()) {
             newErrors.ifscCode = "IFSC code is required";
-        } else if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(formData.ifscCode)) {
-            newErrors.ifscCode = "Invalid IFSC code format (e.g., SBIN0001234)";
         }
 
         setErrors(newErrors);
@@ -116,7 +125,7 @@ export default function BankDetailsPage() {
                 throw new Error("Loan application ID not found");
             }
 
-            // Use PATCH instead of POST to match updateLoanApplication controller
+            // Use POST to match existing logic
             await api.post(`/loan-applications/${applicationId}`, {
                 bankName: formData.bankName.trim(),
                 accountNumber: formData.accountNumber.trim(),
@@ -127,12 +136,10 @@ export default function BankDetailsPage() {
             toast.success("Bank details submitted successfully!");
             console.log("Bank details submitted:", formData);
 
-            // Dispatch custom event to signal successful submission
-            const event = new CustomEvent("bankDetailsSubmitted", {
-                detail: { isValid: true, stepId: 3 }
-            });
-            window.dispatchEvent(event);
-            console.log("Dispatched bankDetailsSubmitted event:", { isValid: true, stepId: 3 });
+            // Update stepper state to enable Next button
+            dispatch({ type: 'SET_STEP_VALID', payload: { stepId: 3, isValid: true } });
+            dispatch({ type: 'SET_CAN_PROCEED', payload: true });
+            updateStepData(3, { ...formData });
         } catch (error: any) {
             console.error("Failed to save bank details:", error);
             toast.error(error.response?.data?.message || "Failed to save bank details");
@@ -166,9 +173,8 @@ export default function BankDetailsPage() {
                             value={formData.bankName}
                             onChange={(e) => handleInputChange("bankName", e.target.value)}
                             placeholder="Enter your bank name"
-                            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                                errors.bankName ? "border-red-500" : "border-gray-300"
-                            } ${isReadOnly ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.bankName ? "border-red-500" : "border-gray-300"
+                                } ${isReadOnly ? "bg-gray-100 cursor-not-allowed" : ""}`}
                             readOnly={isReadOnly}
                             disabled={isLoading}
                         />
@@ -188,9 +194,8 @@ export default function BankDetailsPage() {
                             value={formData.accountNumber}
                             onChange={(e) => handleInputChange("accountNumber", e.target.value)}
                             placeholder="Enter your account number"
-                            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                                errors.accountNumber ? "border-red-500" : "border-gray-300"
-                            } ${isReadOnly ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.accountNumber ? "border-red-500" : "border-gray-300"
+                                } ${isReadOnly ? "bg-gray-100 cursor-not-allowed" : ""}`}
                             readOnly={isReadOnly}
                             disabled={isLoading}
                         />
@@ -210,9 +215,8 @@ export default function BankDetailsPage() {
                             value={formData.ifscCode}
                             onChange={(e) => handleInputChange("ifscCode", e.target.value)}
                             placeholder="Enter IFSC code"
-                            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase ${
-                                errors.ifscCode ? "border-red-500" : "border-gray-300"
-                            } ${isReadOnly ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase ${errors.ifscCode ? "border-red-500" : "border-gray-300"
+                                } ${isReadOnly ? "bg-gray-100 cursor-not-allowed" : ""}`}
                             readOnly={isReadOnly}
                             disabled={isLoading}
                         />
@@ -226,11 +230,10 @@ export default function BankDetailsPage() {
                         <button
                             type="submit"
                             disabled={isLoading || isReadOnly || Object.keys(errors).length > 0}
-                            className={`w-full py-3 rounded-lg font-medium transition-colors ${
-                                isLoading || isReadOnly || Object.keys(errors).length > 0
+                            className={`w-full py-3 rounded-lg font-medium transition-colors ${isLoading || isReadOnly || Object.keys(errors).length > 0
                                     ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                                     : "bg-blue-600 text-white hover:bg-blue-700"
-                            } shadow-md`}
+                                } shadow-md`}
                         >
                             {isLoading ? "Submitting..." : isReadOnly ? "Bank Details Saved" : "Submit Bank Details"}
                         </button>

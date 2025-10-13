@@ -1,8 +1,10 @@
 import { motion } from 'framer-motion';
 import LoanApplicationStepper from '../components/application/LoanApplicationStepper';
+import { StepperProvider } from '../contexts/StepperContext';
 
 export default function LoanApplicationPage() {
   return (
+    <StepperProvider>
     <div className="min-h-screen bg-gray-50 pt-20">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <motion.div
@@ -15,13 +17,14 @@ export default function LoanApplicationPage() {
               Loan Application
             </h1>
             <p className="text-lg text-gray-600">
-              Complete your comprehensive loan application in 10 simple steps
+              Complete your comprehensive loan application in just few simple steps
             </p>
           </div>
 
           <LoanApplicationStepper />
-        </motion.div>
+          </motion.div>
+        </div>
       </div>
-    </div>
+    </StepperProvider>
   );
 }

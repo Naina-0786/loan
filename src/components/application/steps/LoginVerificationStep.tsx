@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import api from '../../../api/apiClient';
+import { useStepper } from '../../../contexts/StepperContext';
 
 export default function LoginVerificationStep() {
+    const { dispatch, updateStepData } = useStepper();
     const [formData, setFormData] = useState({
         email: '',
         otp: '',
@@ -26,6 +28,7 @@ export default function LoginVerificationStep() {
 
     // Fetch loan application on component mount
     useEffect(() => {
+        let isMounted = true; // Prevent updates after unmount
         const fetchLoanApplication = async () => {
             const applicationId = localStorage.getItem('loanApplicationId');
             if (applicationId) {
@@ -33,7 +36,7 @@ export default function LoginVerificationStep() {
                 try {
                     const response = await api.get(`/loan-applications/${applicationId}`);
                     const application = response.data.data;
-                    if (application.email) {
+                    if (application.email && isMounted) {
                         setFormData({
                             email: application.email,
                             otp: '',
@@ -41,26 +44,34 @@ export default function LoginVerificationStep() {
                             loanApplicationId: parseInt(applicationId)
                         });
                         localStorage.setItem('userEmail', application.email);
+                        // Update stepper state
+                        updateStepData(1, { email: application.email, isVerified: true });
+                        dispatch({ type: 'SET_STEP_VALID', payload: { stepId: 1, isValid: true } });
                     }
                 } catch (error) {
                     console.error('Failed to fetch loan application:', error);
-                    toast.error('Failed to fetch loan application data');
-                    // Clear loanApplicationId if fetch fails
-                    localStorage.removeItem('loanApplicationId');
-                    localStorage.removeItem('userEmail');
-                    setFormData({
-                        email: '',
-                        otp: '',
-                        isVerified: false,
-                        loanApplicationId: null
-                    });
+                    if (isMounted) {
+                        toast.error('Failed to fetch loan application data');
+                        localStorage.removeItem('loanApplicationId');
+                        localStorage.removeItem('userEmail');
+                        setFormData({
+                            email: '',
+                            otp: '',
+                            isVerified: false,
+                            loanApplicationId: null
+                        });
+                    }
                 } finally {
-                    setIsLoading(false);
+                    if (isMounted) setIsLoading(false);
                 }
             }
         };
 
         fetchLoanApplication();
+
+        return () => {
+            isMounted = false; // Cleanup to prevent state updates after unmount
+        };
     }, []);
 
     // Handle email input change
@@ -71,6 +82,9 @@ export default function LoginVerificationStep() {
         if (errors.email) {
             setErrors(prev => ({ ...prev, email: '' }));
         }
+        // Reset step validity and update data
+        dispatch({ type: 'SET_STEP_VALID', payload: { stepId: 1, isValid: false } });
+        updateStepData(1, { email: value, isVerified: false });
     };
 
     // Handle sending OTP
@@ -127,6 +141,10 @@ export default function LoginVerificationStep() {
             }));
             setErrors({});
             toast.success('OTP verified successfully');
+            // Update stepper state
+            updateStepData(1, { email: formData.email, isVerified: true, loanApplicationId });
+            dispatch({ type: 'SET_STEP_VALID', payload: { stepId: 1, isValid: true } });
+            dispatch({ type: 'SET_CAN_PROCEED', payload: true });
         } catch (error: any) {
             const message = error.response?.data?.message || 'Invalid OTP';
             toast.error(message);

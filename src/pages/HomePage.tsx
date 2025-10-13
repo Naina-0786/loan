@@ -1,14 +1,13 @@
-import React from 'react';
-import HeroSection from '../components/home/HeroSection';
-import LoanCategoriesSection from '../components/home/LoanCategoriesSection';
-import WhyChooseUsSection from '../components/home/WhyChooseUsSection';
-import HowItWorksSection from '../components/home/HowItWorksSection';
-import LoanCalculatorPreviewSection from '../components/home/LoanCalculatorPreviewSection';
 import EligibilitySection from '../components/home/EligibilitySection';
-import InterestRatesSection from '../components/home/InterestRatesSection';
-import TestimonialsSection from '../components/home/TestimonialsSection';
 import FAQSection from '../components/home/FAQSection';
+import HeroSection from '../components/home/HeroSection';
+import HowItWorksSection from '../components/home/HowItWorksSection';
+import InterestRatesSection from '../components/home/InterestRatesSection';
+import LoanCalculatorPreviewSection from '../components/home/LoanCalculatorPreviewSection';
+import LoanCategoriesSection from '../components/home/LoanCategoriesSection';
+import TestimonialsSection from '../components/home/TestimonialsSection';
 import TrustSecuritySection from '../components/home/TrustSecuritySection';
+import WhyChooseUsSection from '../components/home/WhyChooseUsSection';
 
 export default function HomePage() {
   return (

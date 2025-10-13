@@ -6,7 +6,7 @@ export interface LoanApplicationData {
   phone?: string;
   loanAmount?: string;
   interest?: string;
-  loanTenure?: number;
+  loanTenure?: string;
   aadharNumber?: string;
   panNumber?: string;
   fullName?: string;
@@ -228,7 +228,7 @@ export const uploadPaymentScreenshot = async (
 export interface LoanApplication {
   id: number;
   email: string;
-  phone: string | null;
+  phoneNumber: string | null;
   loanAmount: string | null;
   interest: string | null;
   loanTenure: number | null;
@@ -277,8 +277,8 @@ export const getLoanApplicationById = async (id: number) => {
   return response.data.data as LoanApplication;
 };
 
-export const updateFeeStatus = async (id: number, field: string, status: 'APPROVED' | 'REJECTED') => {
+export const updateFeeStatus = async (id: number, field: string, status: 'APPROVED' | 'REJECTED' | 'PENDING') => {
   const data = { [field]: status };
-  const response = await api.patch(`/loan-applications/${id}`, data);
+  const response = await api.post(`/loan-applications/${id}`, data);
   return response.data.data.data as LoanApplication;
 };

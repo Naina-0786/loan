@@ -8,23 +8,23 @@ export default function HeroSection() {
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background Gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-900 via-blue-800 to-emerald-800" />
-      
+
       {/* Animated Background Elements */}
       <div className="absolute inset-0">
         <motion.div
-          animate={{ 
+          animate={{
             scale: [1, 1.1, 1],
             rotate: [0, 5, 0],
-            opacity: [0.1, 0.2, 0.1]
+            opacity: [0.1, 0.2, 0.1],
           }}
           transition={{ duration: 20, repeat: Infinity }}
           className="absolute top-20 left-20 w-96 h-96 bg-white/10 rounded-full blur-3xl"
         />
         <motion.div
-          animate={{ 
+          animate={{
             scale: [1.1, 1, 1.1],
             rotate: [5, -5, 5],
-            opacity: [0.1, 0.15, 0.1]
+            opacity: [0.1, 0.15, 0.1],
           }}
           transition={{ duration: 25, repeat: Infinity }}
           className="absolute bottom-20 right-20 w-80 h-80 bg-emerald-400/10 rounded-full blur-3xl"
@@ -45,14 +45,15 @@ export default function HeroSection() {
               Our Funding
             </span>
           </h1>
-          
+
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
             className="text-xl md:text-2xl text-blue-100 mb-8 max-w-3xl mx-auto"
           >
-            Experience the future of lending with instant approvals, competitive rates, and zero hidden fees
+            Experience the future of lending with instant approvals, competitive
+            rates, and zero hidden fees
           </motion.p>
 
           <motion.div
@@ -71,11 +72,11 @@ export default function HeroSection() {
                 </Button>
               </motion.div>
             </Link>
-            
+
             <Link to="/calculator">
-              <Button variant="outline" size="lg" className="px-12 py-4 text-lg border-white/30 text-white hover:bg-white/10">
+              {/* <Button variant="outline" size="lg" className="px-12 py-4 text-lg border-white/30 text-white hover:bg-white/10">
                 Calculate EMI
-              </Button>
+              </Button> */}
             </Link>
           </motion.div>
 

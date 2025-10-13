@@ -1,9 +1,10 @@
-import React from 'react';
-import { useStepper } from '../../contexts/StepperContext';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useStepper } from '../../contexts/StepperContext';
 
 export default function StepNavigation() {
     const { state, previousStep, nextStep, validateStep, canNavigateToStep } = useStepper();
+
+    const currentStep = state.steps.find(step => step.id === state.currentStep);
 
     const canGoBack = state.currentStep > 1;
     const currentStepData = state.steps.find(step => step.id === state.currentStep);
@@ -26,10 +27,10 @@ export default function StepNavigation() {
             </button>
 
             <div className="text-sm text-gray-500 text-center">
-                {state.isComplete ? 'Application Complete' : `Step ${state.currentStep} of ${state.steps.length}`}
+                {/* {state.isComplete ? 'Application Complete' : `Step ${state.currentStep} of ${state.steps.length}`} */}
                 {!isCurrentStepValid && !state.isComplete && (
                     <div className="text-red-500 text-xs mt-1">
-                        Complete current step to proceed
+                        {currentStep?.title ? `Complete ${currentStep?.title} to proceed` : ''}
                     </div>
                 )}
                 {!state.canProceed && !state.isComplete && (

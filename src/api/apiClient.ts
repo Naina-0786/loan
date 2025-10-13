@@ -46,11 +46,11 @@ import axios from "axios";
 // export default api;
 
 
-
+//https://loanwebsite-4l12.vercel.app
 
 // Initialize axios instance
 const api = axios.create({
-  baseURL: "http://localhost:3000/api",
+  baseURL: "https://loanwebsite-4l12.vercel.app/api",
   timeout: 10000,
   withCredentials: true,
   headers: {

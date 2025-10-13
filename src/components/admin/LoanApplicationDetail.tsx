@@ -1,4 +1,3 @@
-// New frontend component: src/pages/admin/LoanApplicationDetail.tsx or similar
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, CheckCircle, XCircle, Clock, Download } from 'lucide-react';
@@ -30,7 +29,7 @@ const LoanApplicationDetail: React.FC = () => {
         }
     };
 
-    const handleUpdateFeeStatus = async (feeType: string, status: 'APPROVED' | 'REJECTED') => {
+    const handleUpdateFeeStatus = async (feeType: string, status: 'APPROVED' | 'REJECTED' | 'PENDING') => {
         if (!application) return;
         try {
             const updated = await updateFeeStatus(application.id, feeType, status);
@@ -77,7 +76,6 @@ const LoanApplicationDetail: React.FC = () => {
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                         <span className="font-medium text-gray-900">{label}</span>
-                        <StatusBadge status={status} />
                     </div>
                     {url && (
                         <a
@@ -99,20 +97,20 @@ const LoanApplicationDetail: React.FC = () => {
                         />
                     </div>
                 )}
-                {status === 'PENDING' && (
-                    <div className="flex space-x-2">
-                        <button
-                            onClick={() => handleUpdateFeeStatus(statusField as string, 'APPROVED')}
-                            className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+                {url && (
+                    <div className="flex items-center space-x-2">
+                        <span className="text-sm font-medium text-gray-700">Current Status:</span>
+                        <StatusBadge status={status} />
+                        <select
+                            onChange={(e) => handleUpdateFeeStatus(statusField as string, e.target.value as 'APPROVED' | 'REJECTED' | 'PENDING')}
+                            className="px-3 py-1 bg-white border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            defaultValue=""
                         >
-                            Approve
-                        </button>
-                        <button
-                            onClick={() => handleUpdateFeeStatus(statusField as string, 'REJECTED')}
-                            className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
-                        >
-                            Reject
-                        </button>
+                            <option value="" disabled>Select Status</option>
+                            <option value="APPROVED">Approve</option>
+                            <option value="REJECTED">Reject</option>
+                            <option value="PENDING">Pending</option>
+                        </select>
                     </div>
                 )}
             </div>
@@ -175,7 +173,7 @@ const LoanApplicationDetail: React.FC = () => {
                             <div><span className="font-medium">Full Name:</span> {application.fullName || 'N/A'}</div>
                             <div><span className="font-medium">Father's Name:</span> {application.fatherName || 'N/A'}</div>
                             <div><span className="font-medium">Email:</span> {application.email}</div>
-                            <div><span className="font-medium">Phone:</span> {application.phone || 'N/A'}</div>
+                            <div><span className="font-medium">Phones:</span> {application.phoneNumber || 'N/A'}</div>
                             <div><span className="font-medium">Aadhar Number:</span> {application.aadharNumber || 'N/A'}</div>
                             <div><span className="font-medium">PAN Number:</span> {application.panNumber || 'N/A'}</div>
                             <div><span className="font-medium">Address:</span> {application.address || 'N/A'}</div>

@@ -1,4 +1,3 @@
-import React from 'react';
 import { useStepper } from '../../contexts/StepperContext';
 
 export default function StepperHeader() {
@@ -10,20 +9,20 @@ export default function StepperHeader() {
                 <h1 className="text-xl font-semibold text-white">
                     Loan Application
                 </h1>
-                <div className="text-sm text-blue-100">
+                {/* <div className="text-sm text-blue-100">
                     Step {state.currentStep} of {state.steps.length}
-                </div>
+                </div> */}
             </div>
 
             {/* Progress Bar - Will be enhanced in task 2 */}
-            <div className="mt-4">
+            {/* <div className="mt-4">
                 <div className="w-full bg-blue-500 rounded-full h-2">
                     <div
                         className="bg-white h-2 rounded-full transition-all duration-300"
                         style={{ width: `${(state.currentStep / state.steps.length) * 100}%` }}
                     />
                 </div>
-            </div>
+            </div> */}
         </div>
     );
 }

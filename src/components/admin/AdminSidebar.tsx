@@ -4,7 +4,10 @@ import {
     FileText,
     LogOut,
     Users,
-    Menu
+    Menu,
+    QrCode,
+    Wallet,
+    List
 } from 'lucide-react';
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -35,6 +38,16 @@ const AdminSidebar: React.FC = () => {
             name: 'Applications',
             href: '/admin/manage-applications',
             icon: <FileText className="h-5 w-5" />
+        },
+        {
+            name: "Qr Code",
+            href: "/admin/qr-code",
+            icon: <QrCode className="h-5 w-5" />
+        },
+        {
+            name: "Accounts",
+            href: "/admin/account",
+            icon: <Wallet className="h-5 w-5" />
         }
     ];
 

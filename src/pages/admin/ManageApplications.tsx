@@ -1,9 +1,10 @@
-// Updated frontend component: src/pages/admin/ManageApplications.tsx or similar
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Eye, CheckCircle, XCircle, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Filter, Eye, CheckCircle, XCircle, Clock, ChevronLeft, ChevronRight, Delete, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import AdminLayout from '../../components/admin/AdminLayout';
 import { getAllLoanApplications, LoanApplication, LoanApplicationsResponse } from '../../api/loanApplicationApi';
+import api from '../../api/apiClient';
+import * as XLSX from 'xlsx';
 
 const ManageApplications: React.FC = () => {
     const [applications, setApplications] = useState<LoanApplication[]>([]);
@@ -12,7 +13,7 @@ const ManageApplications: React.FC = () => {
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
-    const [limit] = useState(10); // Can make adjustable if needed
+    const [limit] = useState(10);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -21,20 +22,18 @@ const ManageApplications: React.FC = () => {
 
     useEffect(() => {
         const token = localStorage.getItem("dhani_admin_token");
-        if (token) {
-            navigate("/admin/manage-admin")
-        } else {
+        if (!token) {
             navigate("/admin/login")
         }
-    },[])
+    }, [])
 
     const fetchApplications = async () => {
         setLoading(true);
         try {
             const response: LoanApplicationsResponse = await getAllLoanApplications(
-                currentPage, 
-                limit, 
-                searchTerm, 
+                currentPage,
+                limit,
+                searchTerm,
                 statusFilter === 'all' ? '' : statusFilter
             );
             setApplications(response.applications || []);
@@ -99,6 +98,39 @@ const ManageApplications: React.FC = () => {
         navigate(`/admin/loan-applications/${id}`);
     };
 
+    const handleDelete = async (id: number) => {
+        try {
+            const res = await api.delete(`/admin/loan-applications/${id}`);
+            console.log(res.data)
+            fetchApplications();
+        } catch (error) {
+            console.error('Error deleting application:', error);
+        }
+    };
+
+    const handleDownloadSingle = (application: LoanApplication) => {
+        // Prepare data for Excel with selected fields for single application
+        const exportData = [{
+            ID: application.id,
+            'Full Name': application.fullName || 'N/A',
+            Email: application.email,
+            'Phone Number': application.phoneNumber || 'N/A',
+            'Loan Amount': formatCurrency(application.loanAmount),
+            'Interest Rate (%)': application.interest || 'N/A',
+            'Loan Tenure (months)': application.loanTenure || 'N/A',
+            Status: getOverallStatus(application),
+            'Applied Date': formatDate(application.createdAt),
+        }];
+
+        // Create worksheet and workbook
+        const worksheet = XLSX.utils.json_to_sheet(exportData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Loan Application');
+
+        // Generate Excel file and trigger download
+        XLSX.writeFile(workbook, `Loan_Application_${application.id}.xlsx`);
+    };
+
     const handlePreviousPage = () => {
         if (currentPage > 1) {
             setCurrentPage(prev => prev - 1);
@@ -109,6 +141,34 @@ const ManageApplications: React.FC = () => {
         if (currentPage < totalPages) {
             setCurrentPage(prev => prev + 1);
         }
+    };
+
+    const handleExportToExcel = () => {
+        if (applications.length === 0) {
+            alert('No applications available to export.');
+            return;
+        }
+
+        // Prepare data for Excel with selected fields
+        const exportData = applications.map((application) => ({
+            ID: application.id,
+            'Full Name': application.fullName || 'N/A',
+            Email: application.email,
+            'Phone Number': application.phoneNumber || 'N/A',
+            'Loan Amount': formatCurrency(application.loanAmount),
+            'Interest Rate (%)': application.interest || 'N/A',
+            'Loan Tenure (months)': application.loanTenure || 'N/A',
+            Status: getOverallStatus(application),
+            'Applied Date': formatDate(application.createdAt),
+        }));
+
+        // Create worksheet and workbook
+        const worksheet = XLSX.utils.json_to_sheet(exportData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Loan Applications');
+
+        // Generate Excel file and trigger download
+        XLSX.writeFile(workbook, 'Loan_Applications.xlsx');
     };
 
     return (
@@ -145,6 +205,14 @@ const ManageApplications: React.FC = () => {
                             <option value="REJECTED">Rejected</option>
                         </select>
                     </div>
+                    <button
+                        onClick={handleExportToExcel}
+                        className="flex items-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700"
+                        disabled={loading || applications.length === 0}
+                    >
+                        <Download className="h-4 w-4 mr-2" />
+                        Export to Excel
+                    </button>
                 </div>
 
                 {/* Applications Table */}
@@ -189,7 +257,7 @@ const ManageApplications: React.FC = () => {
                                             <div>
                                                 <div className="text-sm font-medium text-gray-900">{application.fullName || 'N/A'}</div>
                                                 <div className="text-sm text-gray-500">{application.email}</div>
-                                                <div className="text-sm text-gray-500">{application.phone || 'N/A'}</div>
+                                                <div className="text-sm text-gray-500">{application.phoneNumber || 'N/A'}</div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
@@ -204,13 +272,27 @@ const ManageApplications: React.FC = () => {
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             {formatDate(application.createdAt)}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                                             <button
                                                 onClick={() => handleViewDetails(application.id)}
                                                 className="text-blue-600 hover:text-blue-900 flex items-center"
                                             >
                                                 <Eye className="h-4 w-4 mr-1" />
-                                                View Details
+                                                View
+                                            </button>
+                                            <button
+                                                onClick={() => handleDownloadSingle(application)}
+                                                className="text-green-600 hover:text-green-900 flex items-center"
+                                            >
+                                                <Download className="h-4 w-4 mr-1" />
+                                                Download
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(application.id)}
+                                                className="text-red-600 hover:text-red-900 flex items-center"
+                                            >
+                                                <Delete className="h-4 w-4 mr-1" />
+                                                Delete
                                             </button>
                                         </td>
                                     </tr>

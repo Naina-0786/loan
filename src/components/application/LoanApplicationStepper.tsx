@@ -1,4 +1,5 @@
-import { StepperProvider } from '../../contexts/StepperContext';
+import { useEffect } from 'react';
+import { useStepper } from '../../contexts/StepperContext';
 import CompletionModal from './CompletionModal';
 import StepContent from './StepContent';
 import StepNavigation from './StepNavigation';
@@ -9,8 +10,12 @@ interface LoanApplicationStepperProps {
 }
 
 export default function LoanApplicationStepper({ className = '' }: LoanApplicationStepperProps) {
+    const { state } = useStepper();
+    useEffect(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, [state.currentStep]);
     return (
-        <StepperProvider>
+        <>
             <div className={`max-w-4xl mx-auto p-6 ${className}`}>
                 <div className="bg-white rounded-lg shadow-lg overflow-hidden">
                     {/* Progress Header */}
@@ -28,6 +33,6 @@ export default function LoanApplicationStepper({ className = '' }: LoanApplicati
 
             {/* Completion Modal */}
             <CompletionModal />
-        </StepperProvider>
+        </>
     );
 }

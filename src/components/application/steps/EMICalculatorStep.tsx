@@ -130,8 +130,8 @@ export default function EMICalculatorStep() {
     const handleLoanAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (isReadOnly) return; // Prevent changes if read-only
         const value = parseFloat(e.target.value) || 0;
-        if (value < 50000) {
-            setErrors(prev => ({ ...prev, loanAmount: 'Minimum loan amount is ₹50,000' }));
+        if (value < 5000) {
+            setErrors(prev => ({ ...prev, loanAmount: 'Minimum loan amount is ₹5,000' }));
         } else if (value > 10000000) {
             setErrors(prev => ({ ...prev, loanAmount: 'Maximum loan amount is ₹1,00,00,000' }));
         } else {
@@ -212,7 +212,7 @@ export default function EMICalculatorStep() {
                             className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                                 errors.loanAmount ? 'border-red-500' : 'border-gray-300'
                             } ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                            min="50000"
+                            min="5000"
                             max="10000000"
                             step="10000"
                             readOnly={isReadOnly}
@@ -221,7 +221,7 @@ export default function EMICalculatorStep() {
                         {errors.loanAmount && (
                             <p className="text-red-500 text-sm mt-1">{errors.loanAmount}</p>
                         )}
-                        <p className="text-gray-500 text-xs mt-1">Range: ₹50,000 - ₹1,00,00,000</p>
+                        <p className="text-gray-500 text-xs mt-1">Range: ₹5,000 - ₹1,00,00,000</p>
                     </div>
 
                     {/* Interest Rate */}
