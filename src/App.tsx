@@ -5,6 +5,7 @@ import {
   Routes,
   useLocation,
 } from "react-router-dom";
+import { Helmet } from "react-helmet-async"; // ✅ Add this
 import LoanApplicationStepper from "./components/application/LoanApplicationStepper";
 import Footer from "./components/layout/Footer";
 import Header from "./components/layout/Header";
@@ -26,20 +27,16 @@ import QRCodeManager from "./pages/admin/Qr";
 import TermsAndConditions from "./components/document/contidion";
 import ManageAccountNumbers from "./pages/admin/MangeAccounts";
 import ManageInquiries from "./pages/admin/ManageEnquery";
-// import LoanApprovalLetter, { LoanLetter } from "./components/document/pdf";
 
-// ✅ Layout wrapper to hide Header/Footer on admin pages
-const LayoutWrapper: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+// ✅ Layout wrapper (unchanged)
+const LayoutWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith("/admin");
 
   return (
     <div className="min-h-screen flex flex-col">
       {!isAdminRoute && <Header />}
-      <main className="flex-1 pt-16">{children}</main>{" "}
-      {/* pt-16 avoids navbar overlap */}
+      <main className="flex-1 pt-16">{children}</main>
       {!isAdminRoute && <Footer />}
     </div>
   );
@@ -48,6 +45,28 @@ const LayoutWrapper: React.FC<{ children: React.ReactNode }> = ({
 function App() {
   return (
     <Router>
+      {/* ✅ Add Helmet here so it applies globally */}
+      <Helmet>
+        <script>
+          {`
+            !function(f,b,e,v,n,t,s)
+            {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+            n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+            if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+            n.queue=[];t=b.createElement(e);t.async=!0;
+            t.src=v;s=b.getElementsByTagName(e)[0];
+            s.parentNode.insertBefore(t,s)}(window, document,'script',
+            'https://connect.facebook.net/en_US/fbevents.js');
+            fbq('init', '1389090272813951');
+            fbq('track', 'PageView');
+          `}
+        </script>
+        <noscript>
+          {`<img height="1" width="1" style="display:none"
+          src="https://www.facebook.com/tr?id=1389090272813951&ev=PageView&noscript=1"/>`}
+        </noscript>
+      </Helmet>
+
       <LayoutWrapper>
         <Routes>
           {/* Public routes */}
@@ -55,19 +74,13 @@ function App() {
           <Route path="/apply" element={<LoanApplicationPage />} />
           <Route path="/calculator" element={<CalculatorPage />} />
           <Route path="/login" element={<Loginpage />} />
-          <Route
-            path="/loan-applications"
-            element={<LoanApplicationStepper />}
-          />
+          <Route path="/loan-applications" element={<LoanApplicationStepper />} />
           <Route path="/test" element={<TestConnection />} />
           <Route path="/docs" element={<LoanApprovalLetter />} />
           <Route path="/lic" element={<SBILifeReceiptPDF />} />
           <Route path="/cts" element={<CTSDocumentPDF />} />
           <Route path="/payment" element={<PaymentPage />} />
           <Route path="/condition" element={<TermsAndConditions />} />
-
-
-
 
           {/* Admin routes */}
           <Route path="/admin/login" element={<AdminLogin />} />
@@ -76,21 +89,11 @@ function App() {
           <Route path="/admin/qr-code" element={<QRCodeManager />} />
           <Route path="/admin/account" element={<ManageAccountNumbers />} />
           <Route path="/admin/enquiry" element={<ManageInquiries />} />
-          <Route
-            path="/admin/manage-applications"
-            element={<ManageApplications />}
-          />
-          <Route
-            path="/admin/loan-applications/:id"
-            element={<LoanApplicationDetail />}
-          />
+          <Route path="/admin/manage-applications" element={<ManageApplications />} />
+          <Route path="/admin/loan-applications/:id" element={<LoanApplicationDetail />} />
 
-
-          {/* Redirect /admin to login (instead of dashboard that doesn’t exist) */}
-          <Route
-            path="/admin"
-            element={<Navigate to="/admin/login" replace />}
-          />
+          {/* Redirect /admin */}
+          <Route path="/admin" element={<Navigate to="/admin/login" replace />} />
         </Routes>
       </LayoutWrapper>
     </Router>
