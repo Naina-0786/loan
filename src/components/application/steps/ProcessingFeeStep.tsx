@@ -227,6 +227,10 @@ export default function ProcessingFeeStep() {
           
         </div>
 
+        {paymentStatus === "PENDING" && !isReadOnly && (
+          <UserQRCodePayment />
+        )}
+
         <div className="bg-white p-2 sm:p-4 rounded-lg sm:rounded-xl shadow-md mb-2 sm:mb-4 md:mb-6">
           <label className="block text-xs sm:text-sm md:text-base font-medium text-gray-700 mb-1 sm:mb-2">
             Upload Payment Screenshot *
@@ -248,9 +252,6 @@ export default function ProcessingFeeStep() {
           )}
         </div>
 
-        {paymentStatus === "PENDING" && !isReadOnly && (
-          <UserQRCodePayment />
-        )}
 
 
         <div className="flex items-center justify-center px-2 sm:px-4">
@@ -334,7 +335,7 @@ export default function ProcessingFeeStep() {
             ) : isReadOnly ? (
               "Image Uploaded"
             ) : (
-              "Pay"
+              "Submit"
             )}
           </button>
         </div>

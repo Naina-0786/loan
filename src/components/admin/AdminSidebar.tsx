@@ -7,7 +7,8 @@ import {
     Menu,
     QrCode,
     Wallet,
-    List
+    List,
+    Contact
 } from 'lucide-react';
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -48,6 +49,11 @@ const AdminSidebar: React.FC = () => {
             name: "Accounts",
             href: "/admin/account",
             icon: <Wallet className="h-5 w-5" />
+        },
+        {
+            name: "Contact",
+            href: "/admin/contact",
+            icon: <Contact className="h-5 w-5" />
         }
     ];
 

@@ -307,9 +307,15 @@ export default function TdsFeeStep() {
               Payment Details
             </h3>
             <p className="text-xl sm:text-2xl font-bold text-blue-600 mb-2 sm:mb-4">
-              Amount to Pay: ₹300
+              Amount to Pay: ₹{fees?.tdsFee}
             </p>
           </div>
+
+          {paymentStatus === "PENDING" && !isReadOnly && (
+
+            <UserQRCodePayment />
+          )}
+
 
           {!isReadOnly && (
             <div className="bg-white p-4 sm:p-6 rounded-xl shadow-md mb-4 sm:mb-6">
@@ -335,20 +341,7 @@ export default function TdsFeeStep() {
             </div>
           )}
 
-          <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-4 sm:p-6 rounded-xl mt-4 sm:mt-6 border border-gray-200">
-            <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2">
-              Payment to pay
-            </h3>
-            <p className="text-xl sm:text-2xl font-bold text-blue-600 mb-2 sm:mb-4">
-              {fees?.tdsFee}
-            </p>
-          </div>
-
-          {paymentStatus === "PENDING" && !isReadOnly && (
-                      
-                      <UserQRCodePayment />
-                  )}
-          
+         
           
 
           {formData.screenshotUrl && (
@@ -416,7 +409,7 @@ export default function TdsFeeStep() {
               ) : isReadOnly ? (
                 "Image Uploaded"
               ) : (
-                "Pay"
+                "Submit Payment"
               )}
             </button>
           </div>

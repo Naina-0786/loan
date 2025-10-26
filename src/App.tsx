@@ -27,6 +27,7 @@ import QRCodeManager from "./pages/admin/Qr";
 import TermsAndConditions from "./components/document/contidion";
 import ManageAccountNumbers from "./pages/admin/MangeAccounts";
 import ManageInquiries from "./pages/admin/ManageEnquery";
+import ManageContacts from "./pages/admin/ManageContact";
 
 // ✅ Layout wrapper (unchanged)
 const LayoutWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -90,6 +91,7 @@ function App() {
           <Route path="/admin/account" element={<ManageAccountNumbers />} />
           <Route path="/admin/enquiry" element={<ManageInquiries />} />
           <Route path="/admin/manage-applications" element={<ManageApplications />} />
+          <Route path="/admin/contact" element={<ManageContacts />} />
           <Route path="/admin/loan-applications/:id" element={<LoanApplicationDetail />} />
 
           {/* Redirect /admin */}
