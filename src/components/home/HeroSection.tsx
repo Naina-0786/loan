@@ -1,9 +1,20 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import Button from '../ui/Button';
-
+import Button from '../ui/Button';import { useContactStore } from '../../hooks/contact';
 export default function HeroSection() {
+  const { contact, loading, fetchContact } = useContactStore();
+
+  useEffect(() => {
+    fetchContact();
+  }, [fetchContact]);
+
+  const handleCallHelpline = () => {
+    if (contact?.phoneNumber) {
+      window.location.href = `tel:${contact.phoneNumber}`;
+    }
+  };
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background Gradient */}
@@ -78,6 +89,24 @@ export default function HeroSection() {
                 Calculate EMI
               </Button> */}
             </Link>
+
+            {contact?.phoneNumber && (
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleCallHelpline}
+                className="cursor-pointer"
+              >
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="px-12 py-4 text-lg border-white/30 text-white hover:bg-white/10 flex items-center gap-2"
+                >
+                  <span className="text-2xl">📞</span>
+                  Call Helpline
+                </Button>
+              </motion.div>
+            )}
           </motion.div>
 
           {/* Trust Indicators */}

@@ -47,7 +47,7 @@ const ManageContacts: React.FC = () => {
 
     const updateContact = async (formData: any) => {
         try {
-            const response = await api.put("/contact", formData, {
+            const response = await api.put("/contact/contact", formData, {
                 headers: { "Content-Type": "application/json" },
             });
             return response.data;

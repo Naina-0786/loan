@@ -8,6 +8,7 @@ import UserQRCodePayment from "../../document/test/payment";
 import { MessageCircleCodeIcon } from "lucide-react";
 import { useFeeStore } from "../../../hooks/fee";
 import { useQRStore } from "../../../hooks/useQRStore";
+import { useContactStore } from "../../../hooks/contact";
 
 export default function ProcessingFeeStep() {
   const [paymentStatus, setPaymentStatus] = useState<
@@ -22,12 +23,14 @@ export default function ProcessingFeeStep() {
   const [isReadOnly, setIsReadOnly] = useState(false);
 
   const { fees, fetchFees } = useFeeStore()
-  const {fetchQRCode, qrCode} = useQRStore()
+  const { fetchQRCode, qrCode } = useQRStore()
+  const {fetchContact, contact} = useContactStore()
 
 
   useEffect(() => {
     if (!fees) fetchFees();
     if (!qrCode) fetchQRCode();
+    if (!contact) fetchContact();
   }, [fees, fetchFees]);
 
   // Load existing data and check payment status on component mount
@@ -200,7 +203,7 @@ export default function ProcessingFeeStep() {
     const message = encodeURIComponent(
       "I need help with the loan application processing fee payment."
     );
-    const whatsappUrl = `https://wa.me/${qrCode?.phone}?text=${message}`;
+    const whatsappUrl = `https://wa.me/${contact?.phoneNumber}?text=${message}`;
     window.open(whatsappUrl, "_blank");
   };
 
